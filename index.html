@@ -865,11 +865,28 @@
                 const res = await fetch(PM_SCRIPT_URL);
                 const json = await res.json();
                 if (json.success && Array.isArray(json.data)) {
-                    masterPmList = json.data.map(r => ({ ...r, id: Number(r.id) || r.id }));
+                    masterPmList = json.data.map(r => ({
+                        ...r,
+                        id: Number(r.id) || r.id,
+                        year: String(r.year ?? '').trim(),
+                        date: normalizeSheetDate_(r.date),
+                        postponedDate: normalizeSheetDate_(r.postponedDate)
+                    }));
                 }
             } catch (err) {
                 console.warn('Could not load PM data from server, using local defaults.', err);
             }
+        }
+
+        // Google Sheets sometimes auto-converts date-looking text into a full ISO datetime
+        // (e.g. "2026-02-15T00:00:00.000Z") or a serial number. This normalizes it back to
+        // the plain "YYYY-MM-DD" string the rest of the app expects.
+        function normalizeSheetDate_(val) {
+            if (!val) return "";
+            const s = String(val);
+            const isoMatch = s.match(/^(\d{4}-\d{2}-\d{2})/);
+            if (isoMatch) return isoMatch[1];
+            return s;
         }
 
         async function addOrUpdatePmOnServer(record, isNew) {
