@@ -1,0 +1,2238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reliability-Driven Matrix Manager (RDMM) - Plant Engineering Operation Management System</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background-color: #f1f5f9; color: #1e293b; height: 100vh; overflow: hidden; display: flex; }
+        .hidden { display: none !important; }
+        .flex { display: flex; }
+        .grid { display: grid; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .justify-end { justify-content: flex-end; }
+        .space-y-6 > * + * { margin-top: 1.5rem; }
+        .space-y-4 > * + * { margin-top: 1rem; }
+        .space-x-3 > * + * { margin-left: 0.75rem; }
+        .modal-overlay { position: fixed; inset: 0; z-index: 1000; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; padding: 1rem; }
+        .modal-box { background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 1.75rem; width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+        .dimmed-app { filter: grayscale(100%) brightness(35%) contrast(85%); pointer-events: none; user-select: none; }
+        aside { width: 280px; background: #0f172a; border-right: 1px solid #1e293b; display: flex; flex-direction: column; z-index: 20; color: #94a3b8; flex-shrink: 0; }
+        .brand-header { padding: 1.25rem; border-bottom: 1px solid #1e293b; display: flex; align-items: center; gap: 0.85rem; }
+        .nav-links { flex: 1; padding: 1rem 0.75rem; display: flex; flex-direction: column; gap: 0.35rem; overflow-y: auto; }
+        .sidebar-link { display: flex; align-items: center; padding: 0.75rem 1rem; font-size: 0.8125rem; font-weight: 500; border-radius: 8px; color: #94a3b8; text-decoration: none; transition: all 0.2s; }
+        .sidebar-link:hover { background: #1e293b; color: #ffffff; }
+        .sidebar-link.active { background: #2563eb; color: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .sidebar-link.admin-active { background: rgba(217, 119, 6, 0.2); color: #fbbf24; border: 1px solid rgba(217, 119, 6, 0.4); }
+        .main-wrapper { flex: 1; display: flex; flex-direction: column; min-width: 0; background: #f8fafc; height: 100vh; overflow: hidden; }
+        header.top-header { height: 64px; background: #ffffff; border-bottom: 1px solid #e2e8f0; padding: 0 1.5rem; display: flex; align-items: center; justify-content: space-between; z-index: 10; flex-shrink: 0; }
+        main.content-area { flex: 1; overflow-y: auto; padding: 1.5rem; background: #f8fafc; }
+        .card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); width: 100%; }
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.8125rem; }
+        th { padding: 0.75rem; font-weight: 600; color: #64748b; border-bottom: 1px solid #e2e8f0; background: #f8fafc; }
+        td { padding: 0.75rem; border-bottom: 1px solid #f1f5f9; color: #334155; }
+        tr:hover td { background: #f8fafc; }
+        label { display: block; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #475569; margin-bottom: 0.35rem; }
+        input, select, textarea { width: 100%; padding: 0.6rem 0.75rem; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.875rem; color: #1e293b; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #2563eb; background: #ffffff; }
+        button.btn-primary { background: #2563eb; color: white; font-weight: 600; padding: 0.65rem 1.25rem; border-radius: 6px; border: none; cursor: pointer; transition: background 0.2s; font-size: 0.875rem; }
+        button.btn-primary:hover { background: #1d4ed8; }
+        button.btn-amber { background: #d97706; color: white; font-weight: 600; padding: 0.65rem 1.25rem; border-radius: 6px; border: none; cursor: pointer; transition: background 0.2s; font-size: 0.875rem; }
+        button.btn-amber:hover { background: #b45309; }
+        button.btn-emerald { background: #059669; color: white; font-weight: 600; padding: 0.65rem 1.25rem; border-radius: 6px; border: none; cursor: pointer; transition: background 0.2s; font-size: 0.875rem; }
+        button.btn-emerald:hover { background: #047857; }
+        button.btn-danger { background: #dc2626; color: white; font-weight: 600; padding: 0.4rem 0.75rem; border-radius: 6px; border: none; cursor: pointer; font-size: 0.75rem; }
+        button.btn-danger:hover { background: #b91c1c; }
+        .badge { padding: 0.25rem 0.6rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem; }
+        .badge-emerald { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+        .badge-amber { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+        .badge-blue { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+        .badge-red { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+        .report-preview-sheet { background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 2rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); max-width: 800px; margin: 0 auto; font-size: 0.8125rem; }
+    </style>
+</head>
+<body>
+
+    <div id="loginModal" class="modal-overlay">
+        <div class="modal-box">
+            <div style="text-align: center; margin-bottom: 1.5rem;">
+                <div style="display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; border-radius: 50%; background: #eff6ff; color: #2563eb; font-size: 1.5rem; margin-bottom: 0.75rem;">
+                    <i class="fa-solid fa-industry"></i>
+                </div>
+                <h2 style="font-size: 1.25rem; font-weight: bold; color: #0f172a;">Hirotako RDMM System</h2>
+                <p style="font-size: 0.8125rem; color: #64748b; margin-top: 0.25rem;">Please authenticate to access plant dashboards</p>
+            </div>
+            <form id="loginForm" onsubmit="handleLogin(event)" style="display: flex; flex-direction: column; gap: 1rem;">
+                <div><label>Username</label><input type="text" id="loginUser" required placeholder="Enter username"></div>
+                <div><label>Password</label><input type="password" id="loginPass" required placeholder="Enter password"></div>
+                <div id="loginError" class="hidden" style="color: #dc2626; font-size: 0.75rem; text-align: center; background: #fef2f2; padding: 0.5rem; border-radius: 6px; border: 1px solid #fecaca;"></div>
+                <button type="submit" class="btn-primary" style="width: 100%; margin-top: 0.5rem;">Authenticate & Access System</button>
+            </form>
+            <div style="margin-top: 1.25rem; text-align: center; font-size: 0.75rem; color: #94a3b8; border-top: 1px solid #f1f5f9; padding-top: 1rem;">Authorized Accounts: admin, manager, Azhan, clerk</div>
+        </div>
+    </div>
+
+    <div id="appContainer" class="dimmed-app" style="display: flex; width: 100vw; height: 100vh; transition: filter 0.4s; overflow: hidden;">
+        <aside>
+            <div class="brand-header">
+                <div style="background: #2563eb; color: #fff; width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0;"><i class="fa-solid fa-gears"></i></div>
+                <div style="overflow: hidden;">
+                    <h1 style="font-size: 0.9375rem; font-weight: 800; color: #fff; line-height: 1.2; letter-spacing: 0.02em;">HIROTAKO</h1>
+                    <p style="font-size: 11px; color: #60a5fa; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 800; line-height: 1.3; margin-top: 2px;">Reliability-Driven Matrix Manager</p>
+                    <p style="font-size: 9.5px; color: #cbd5e1; font-weight: 600; margin-top: 3px; line-height: 1.2;">Plant Engineering Operation Management System</p>
+                </div>
+            </div>
+            <nav class="nav-links">
+                <a href="#" onclick="switchView('dashboard')" id="nav-dashboard" class="sidebar-link active"><i class="fa-solid fa-chart-pie" style="width: 24px; text-align: center; margin-right: 0.5rem;"></i> Dashboard</a>
+                <a href="#" onclick="switchView('ejr')" id="nav-ejr" class="sidebar-link"><i class="fa-solid fa-file-lines" style="width: 24px; text-align: center; margin-right: 0.5rem;"></i> EJR Register</a>
+                <a href="#" onclick="switchView('pm')" id="nav-pm" class="sidebar-link"><i class="fa-solid fa-calendar-check" style="width: 24px; text-align: center; margin-right: 0.5rem;"></i> PM Master Schedule</a>
+                <a href="#" onclick="switchView('reliability')" id="nav-reliability" class="sidebar-link"><i class="fa-solid fa-chart-line" style="width: 24px; text-align: center; margin-right: 0.5rem;"></i> Advanced Reliability</a>
+                <a href="#" onclick="switchView('reports')" id="nav-reports" class="sidebar-link"><i class="fa-solid fa-file-pdf" style="width: 24px; text-align: center; margin-right: 0.5rem;"></i> Reports & Export Suite</a>
+                <a href="#" onclick="switchView('admin')" id="nav-admin" class="sidebar-link hidden"><i class="fa-solid fa-shield-halved" style="width: 24px; text-align: center; margin-right: 0.5rem;"></i> Admin Console</a>
+            </nav>
+            <div style="padding: 1rem; border-top: 1px solid #1e293b; background: #020617; display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 0.75rem; overflow: hidden;">
+                    <div id="userAvatar" style="width: 32px; height: 32px; border-radius: 50%; background: #334155; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: bold; flex-shrink: 0;">US</div>
+                    <div style="overflow: hidden;">
+                        <p id="userNameDisplay" style="font-size: 0.75rem; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">User</p>
+                        <p id="userRoleDisplay" style="font-size: 10px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Role</p>
+                    </div>
+                </div>
+                <button onclick="logout()" title="Logout" style="background: transparent; border: none; color: #94a3b8; cursor: pointer; padding: 0.5rem; font-size: 0.875rem;" onmouseover="this.style.color='#f87171'" onmouseout="this.style.color='#94a3b8'"><i class="fa-solid fa-right-from-bracket"></i></button>
+            </div>
+        </aside>
+
+        <div class="main-wrapper">
+            <header class="top-header">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <h2 id="pageTitle" style="font-size: 1.125rem; font-weight: bold; color: #1e293b;">Plant Dashboard & Comprehensive Reliability</h2>
+                    <span id="notificationBadgeContainer"></span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <label class="btn-emerald" title="Import the full EJR Excel register as the app's raw dataset" style="cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.35rem 0.75rem; font-size: 0.75rem; border-radius: 6px;">
+                        <i class="fa-solid fa-database"></i> Update Database
+                        <input type="file" id="dashboardUpdateDatabaseInput" accept=".xlsx, .xls, .csv" class="hidden" onchange="loadDashboardDatabase(event)">
+                    </label>
+                    <div style="display: flex; background: #f1f5f9; padding: 3px; border-radius: 8px; border: 1px solid #cbd5e1; gap: 2px;">
+                        <button onclick="setDepartment('ALL')" id="dept-all" style="padding: 0.35rem 0.75rem; font-size: 0.75rem; font-weight: 600; border-radius: 6px; border: none; cursor: pointer; background: #2563eb; color: #fff;">ALL LINES</button>
+                        <button onclick="setDepartment('DS')" id="dept-ds" style="padding: 0.35rem 0.75rem; font-size: 0.75rem; font-weight: 600; border-radius: 6px; border: none; cursor: pointer; background: transparent; color: #475569;">DS</button>
+                        <button onclick="setDepartment('NVH')" id="dept-nvh" style="padding: 0.35rem 0.75rem; font-size: 0.75rem; font-weight: 600; border-radius: 6px; border: none; cursor: pointer; background: transparent; color: #475569;">NVH</button>
+                        <button onclick="setDepartment('Felt')" id="dept-felt" style="padding: 0.35rem 0.75rem; font-size: 0.75rem; font-weight: 600; border-radius: 6px; border: none; cursor: pointer; background: transparent; color: #475569;">Feltline</button>
+                    </div>
+                </div>
+            </header>
+
+            <main class="content-area">
+                <div id="view-dashboard" class="app-view space-y-6">
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h3 style="font-size: 0.875rem; font-weight: bold; color: #1e293b;"><i class="fa-solid fa-network-wired" style="color: #2563eb; margin-right: 0.5rem;"></i> 3 Production Lines Status & Individual Reliability Metrics</h3>
+                            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                <div style="display: flex; align-items: center; gap: 0.5rem; background: #f8fafc; border: 1px solid #cbd5e1; padding: 0.3rem 0.6rem; border-radius: 6px;">
+                                    <label for="dashboardYearSelector" style="font-size: 0.7rem; margin-bottom: 0; color: #475569;">Recall Year:</label>
+                                    <select id="dashboardYearSelector" onchange="changeDashboardYear(this.value)" style="background: transparent; border: none; font-weight: bold; color: #2563eb; font-size: 0.8125rem; width: 85px; padding: 0;"></select>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="dashboardLineStatusContainer" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem;"></div>
+                    </div>
+
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <div>
+                                <h3 style="font-size: 0.875rem; font-weight: bold; color: #1e293b;"><i class="fa-solid fa-chart-bar" style="color: #2563eb; margin-right: 0.5rem;"></i> MTBF & MTTR Comparative Graphical Analysis (All 3 Production Lines)</h3>
+                                <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">Side-by-side professional bar visualization of actual department performance bars alongside individual target benchmark bars.</p>
+                            </div>
+                            <div id="targetConfigPanel" class="hidden">
+                                <button onclick="openTargetModal()" class="btn-amber" style="padding: 0.4rem 0.75rem; font-size: 0.75rem;"><i class="fa-solid fa-sliders"></i> Configure MTBF & MTTR Targets</button>
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem; margin-top: 1rem;">
+                            <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 1rem; border-radius: 8px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                                    <h4 style="font-size: 0.75rem; font-weight: bold; text-transform: uppercase; color: #475569;">MTBF Performance (Hours) vs Targets</h4>
+                                    <span id="labelMtbfTargetSummary" style="font-size: 10px; color: #64748b; font-weight: 600;">DS: 50 | NVH: 55 | Felt: 45</span>
+                                </div>
+                                <div style="height: 220px; position: relative;"><canvas id="dashboardMtbfChart"></canvas></div>
+                            </div>
+                            <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 1rem; border-radius: 8px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                                    <h4 style="font-size: 0.75rem; font-weight: bold; text-transform: uppercase; color: #475569;">MTTR Repair Speed (Hours) vs Targets</h4>
+                                    <span id="labelMttrTargetSummary" style="font-size: 10px; color: #64748b; font-weight: 600;">DS: 2.0 | NVH: 1.5 | Felt: 2.5</span>
+                                </div>
+                                <div style="height: 220px; position: relative;"><canvas id="dashboardMttrChart"></canvas></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3 style="font-size: 0.875rem; font-weight: bold; color: #1e293b; margin-bottom: 1rem;">
+                            <i class="fa-solid fa-list-check" style="color: #2563eb; margin-right: 0.5rem;"></i>
+                            Master EJR List
+                            <span style="font-weight: 500; color: #64748b; font-size: 0.75rem;">— 10 latest registered EJR records</span>
+                        </h3>
+                        <div style="overflow: auto; max-height: 62vh;">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th style="position: sticky; top: 0; z-index: 5;">Date</th>
+                                        <th style="position: sticky; top: 0; z-index: 5;">EJR No</th>
+                                        <th style="position: sticky; top: 0; z-index: 5;">Department</th>
+                                        <th style="position: sticky; top: 0; z-index: 5;">Machine/ Area</th>
+                                        <th style="position: sticky; top: 0; z-index: 5;">Job Request</th>
+                                        <th style="position: sticky; top: 0; z-index: 5;">Propose/Action Taken</th>
+                                        <th style="position: sticky; top: 0; z-index: 5;">Plan Job Date</th>
+                                        <th style="position: sticky; top: 0; z-index: 5;">Person In Charge</th>
+                                        <th style="position: sticky; top: 0; z-index: 5;">Job date start</th>
+                                        <th style="position: sticky; top: 0; z-index: 5;">Time Start</th>
+                                        <th style="position: sticky; top: 0; z-index: 5;">Time Finish</th>
+                                        <th style="position: sticky; top: 0; z-index: 5;">Min</th>
+                                        <th style="position: sticky; top: 0; z-index: 5;">Downtime (min)</th>
+                                        <th style="position: sticky; top: 0; z-index: 5;">Notes</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dashboardMasterEjrTable"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="view-ejr" class="app-view space-y-6 hidden">
+                    <div class="card" style="display: flex; align-items: center; justify-content: space-between;">
+                        <div>
+                            <h3 style="font-size: 0.875rem; font-weight: bold; color: #1e293b;">EJR Master Register & Excel 2-Way Sync</h3>
+                            <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">Authorized changes synchronize directly with central Excel records. <span id="ejrRegisterCountLabel" style="font-weight: 600; color: #2563eb;"></span></p>
+                        </div>
+                        <div style="display: flex; gap: 0.75rem;">
+                            <div id="authorizedActionBtns" class="hidden" style="display: flex; gap: 0.75rem;">
+                                <button onclick="openAddEjrModal()" class="btn-amber"><i class="fa-solid fa-plus"></i> Register New EJR</button>
+                            </div>
+                            <label class="btn-primary" style="cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem;">
+                                <i class="fa-solid fa-file-excel"></i> Upload/Sync Excel
+                                <input type="file" id="ejrExcelInput" accept=".xlsx, .xls, .csv" class="hidden" onchange="loadEJRExcel(event)">
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="card" style="padding: 1rem 1.25rem;">
+                        <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: flex-end;">
+                            <div style="flex: 2 1 240px; min-width: 200px;">
+                                <label for="ejrFilterSearch">Search</label>
+                                <input type="text" id="ejrFilterSearch" placeholder="EJR No, Machine, Job Request, PIC, Notes…" oninput="applyEjrFilters()">
+                            </div>
+                            <div style="flex: 1 1 150px; min-width: 130px;">
+                                <label for="ejrFilterDept">Department</label>
+                                <select id="ejrFilterDept" onchange="applyEjrFilters()"></select>
+                            </div>
+                            <div style="flex: 1 1 150px; min-width: 130px;">
+                                <label for="ejrFilterStatus">Status</label>
+                                <select id="ejrFilterStatus" onchange="applyEjrFilters()">
+                                    <option value="ALL">All Statuses</option>
+                                    <option value="Open">Open</option>
+                                    <option value="In Progress">In Progress</option>
+                                    <option value="Closed">Closed</option>
+                                </select>
+                            </div>
+                            <div style="flex: 1 1 130px; min-width: 110px;">
+                                <label for="ejrFilterYear">Year</label>
+                                <select id="ejrFilterYear" onchange="applyEjrFilters()"></select>
+                            </div>
+                            <div style="flex: 0 0 auto;">
+                                <button type="button" onclick="clearEjrFilters()" style="padding: 0.62rem 1rem; background: #e2e8f0; border: 1px solid #cbd5e1; border-radius: 6px; font-weight: 600; font-size: 0.75rem; color: #475569; cursor: pointer;">
+                                    <i class="fa-solid fa-filter-circle-xmark"></i> Clear
+                                </button>
+                            </div>
+                        </div>
+                        <div id="ejrFilterSummary" style="margin-top: 0.75rem; font-size: 0.75rem; color: #64748b;"></div>
+                        <div id="ejrDowntimeSummary" style="margin-top: 0.55rem; padding-top: 0.55rem; border-top: 1px dashed #e2e8f0; font-size: 0.75rem; color: #334155; display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem;"></div>
+                    </div>
+
+                    <div class="card" style="padding: 0; overflow: hidden;">
+                        <div style="overflow: auto; max-height: 68vh;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="position: sticky; top: 0; z-index: 5;">Date</th>
+                                    <th style="position: sticky; top: 0; z-index: 5;">EJR No</th>
+                                    <th style="position: sticky; top: 0; z-index: 5;">Department</th>
+                                    <th style="position: sticky; top: 0; z-index: 5;">Machine/ Area</th>
+                                    <th style="position: sticky; top: 0; z-index: 5;">Job Request</th>
+                                    <th style="position: sticky; top: 0; z-index: 5;">Propose/Action Taken</th>
+                                    <th style="position: sticky; top: 0; z-index: 5;">Plan Job Date</th>
+                                    <th style="position: sticky; top: 0; z-index: 5;">Person In Charge</th>
+                                    <th style="position: sticky; top: 0; z-index: 5;">Job date start</th>
+                                    <th style="position: sticky; top: 0; z-index: 5;">Time Start</th>
+                                    <th style="position: sticky; top: 0; z-index: 5;">Time Finish</th>
+                                    <th style="position: sticky; top: 0; z-index: 5;">Min</th>
+                                    <th style="position: sticky; top: 0; z-index: 5;">Downtime (min)</th>
+                                    <th style="position: sticky; top: 0; z-index: 5;">Notes</th>
+                                    <th id="ejrActionsHeader" style="text-align: right; position: sticky; top: 0; z-index: 5; min-width: 130px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ejrTableBody"></tbody>
+                        </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="view-pm" class="app-view space-y-6 hidden">
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <div>
+                                <h3 style="font-size: 0.875rem; font-weight: bold; color: #1e293b;"><i class="fa-solid fa-calendar-check" style="color: #2563eb; margin-right: 0.5rem;"></i> PM Master Schedule & Historical Year Recall</h3>
+                                <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">Select any available year dynamically to recall past or future PM schedules and compliance audits.</p>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                <div style="display: flex; align-items: center; gap: 0.5rem; background: #f8fafc; border: 1px solid #cbd5e1; padding: 0.3rem 0.6rem; border-radius: 6px;">
+                                    <label for="pmYearSelector" style="font-size: 0.7rem; margin-bottom: 0; color: #475569;">Recall Year:</label>
+                                    <select id="pmYearSelector" onchange="changePmYear(this.value)" style="background: transparent; border: none; font-weight: bold; color: #2563eb; font-size: 0.8125rem; width: 85px; padding: 0;"></select>
+                                </div>
+                                <button onclick="exportPmCsv()" class="btn-emerald" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;"><i class="fa-solid fa-download"></i> Export PM (CSV)</button>
+                                <div id="pmActionBtnContainer" class="hidden">
+                                    <button onclick="openAddPmModal()" class="btn-amber" style="padding: 0.4rem 0.75rem; font-size: 0.75rem;"><i class="fa-solid fa-plus"></i> Register PM</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                            <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 1rem; border-radius: 8px;">
+                                <span style="font-size: 0.75rem; color: #64748b;">Selected Year PM Compliance Rate</span>
+                                <span id="liveComplianceStat" style="font-size: 1.25rem; font-weight: bold; color: #059669; margin-top: 0.25rem; display: block;">100.0%</span>
+                            </div>
+                            <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 1rem; border-radius: 8px;">
+                                <span style="font-size: 0.75rem; color: #64748b;">Total Scheduled PMs (<span id="displaySelectedYearLabel">2026</span>)</span>
+                                <span id="totalPmStat" style="font-size: 1.25rem; font-weight: bold; color: #0f172a; margin-top: 0.25rem; display: block;">0</span>
+                            </div>
+                            <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 1rem; border-radius: 8px;">
+                                <span style="font-size: 0.75rem; color: #64748b;">Pending / Overdue</span>
+                                <span id="pendingPmStat" style="font-size: 1.25rem; font-weight: bold; color: #d97706; margin-top: 0.25rem; display: block;">0</span>
+                            </div>
+                        </div>
+                        <div id="yearOverviewContainer" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem;"></div>
+                    </div>
+                    <div id="monthDetailCard" class="card hidden">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h4 id="monthDetailTitle" style="font-size: 0.875rem; font-weight: bold; color: #1e293b;">Detailed PMs for Month</h4>
+                            <button onclick="closeMonthDetail()" style="background: #e2e8f0; border: none; padding: 0.35rem 0.75rem; border-radius: 6px; font-size: 0.75rem; cursor: pointer;">Close Detail</button>
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Date</th><th>Dept Code</th><th>Machine Name</th><th>PM Description</th><th>Status / Action</th>
+                                    <th id="pmTableActionsHeader" style="text-align: right; display: none;">Manage</th>
+                                </tr>
+                            </thead>
+                            <tbody id="monthDetailTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="view-reliability" class="app-view space-y-6 hidden">
+                    <div class="card">
+                        <h3 style="font-size: 0.875rem; font-weight: bold; color: #1e293b; margin-bottom: 0.25rem;">Advanced Reliability & Diagnostic Suite</h3>
+                        <p style="font-size: 0.75rem; color: #64748b; margin-bottom: 1rem;">Select specialized engineering analysis modules below for deep technical evaluation.</p>
+                        <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; background: #f1f5f9; padding: 4px; border-radius: 8px; border: 1px solid #cbd5e1; flex-wrap: wrap;">
+                            <button onclick="switchReliabilityAnalysis('trend')" id="rel-btn-trend" style="padding: 0.5rem 0.85rem; font-size: 0.75rem; font-weight: 600; border-radius: 6px; border: none; cursor: pointer; background: #2563eb; color: #fff; flex: 1; text-align: center;">Multi-Variable MTBF & MTTR Trend Decomposition</button>
+                            <button onclick="switchReliabilityAnalysis('pm')" id="rel-btn-pm" style="padding: 0.5rem 0.85rem; font-size: 0.75rem; font-weight: 600; border-radius: 6px; border: none; cursor: pointer; background: transparent; color: #475569; flex: 1; text-align: center;">PM Optimization & Task Effectiveness Matrix</button>
+                            <button onclick="switchReliabilityAnalysis('weibull')" id="rel-btn-weibull" style="padding: 0.5rem 0.85rem; font-size: 0.75rem; font-weight: 600; border-radius: 6px; border: none; cursor: pointer; background: transparent; color: #475569; flex: 1; text-align: center;">Weibull Analysis & Hazard Rate Modeling (Failure Probability)</button>
+                        </div>
+                        <div id="rel-panel-trend" class="rel-analysis-panel">
+                            <h4 style="font-size: 0.8125rem; font-weight: bold; color: #1e293b; margin-bottom: 0.5rem;"><i class="fa-solid fa-chart-line" style="color: #2563eb; margin-right: 0.35rem;"></i> Multi-Line MTBF & MTTR Trend Decomposition (YTD)</h4>
+                            <p style="font-size: 0.75rem; color: #64748b; margin-bottom: 1rem;">Historical tracking of reliability indicators across DS, NVH, and Feltline production lines.</p>
+                            <div style="height: 300px; margin-bottom: 1.25rem; position: relative;"><canvas id="reliabilityComparisonChart"></canvas></div>
+                            <div style="background: #f8fafc; padding: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 0.75rem;">
+                                <strong>Decomposition Insight:</strong> Feltline exhibits periodic airflow suction degradation correlated with heavy-duty operating cycles, whereas NVH maintains stable upper quartile MTBF performance.
+                            </div>
+                        </div>
+                        <div id="rel-panel-pm" class="rel-analysis-panel hidden">
+                            <h4 style="font-size: 0.8125rem; font-weight: bold; color: #1e293b; margin-bottom: 0.5rem;"><i class="fa-solid fa-table-cells" style="color: #059669; margin-right: 0.35rem;"></i> PM Optimization & Task Effectiveness Matrix</h4>
+                            <p style="font-size: 0.75rem; color: #64748b; margin-bottom: 1rem;">Evaluates current preventative maintenance intervals against historical failure reduction rates.</p>
+                            <table style="margin-bottom: 1rem;">
+                                <thead><tr><th>Asset / Machine</th><th>Current PM Task</th><th>Frequency</th><th>Effectiveness Score</th><th>Optimization Recommendation</th></tr></thead>
+                                <tbody>
+                                    <tr><td><strong>Hydraulic Press #1 (DS)</strong></td><td>Oil Filter Replacement & Seal Check</td><td>Monthly</td><td><span class="badge badge-emerald">94% (High)</span></td><td>Maintain current interval; robust reliability correlation.</td></tr>
+                                    <tr><td><strong>Thermoforming Line (NVH)</strong></td><td>Heater Element Calibration</td><td>Bi-Weekly</td><td><span class="badge badge-emerald">98% (Optimal)</span></td><td>High thermal stability achieved. No adjustment required.</td></tr>
+                                    <tr><td><strong>Needle Loom #2 (Felt)</strong></td><td>Bearing Grease Replenishment</td><td>Monthly</td><td><span class="badge badge-amber">72% (Moderate)</span></td><td>Increase frequency to bi-weekly due to high particulate exposure.</td></tr>
+                                    <tr><td><strong>Air Extraction Chimney (Felt)</strong></td><td>Static Pressure & Flow Test</td><td>Quarterly</td><td><span class="badge badge-amber">68% (Review)</span></td><td>Incorporate monthly duct cleaning to minimize pressure drop.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="rel-panel-weibull" class="rel-analysis-panel hidden">
+                            <h4 style="font-size: 0.8125rem; font-weight: bold; color: #1e293b; margin-bottom: 0.5rem;"><i class="fa-solid fa-wave-square" style="color: #d97706; margin-right: 0.35rem;"></i> Weibull Analysis & Hazard Rate Modeling (Failure Probability)</h4>
+                            <p style="font-size: 0.75rem; color: #64748b; margin-bottom: 1rem;">Statistical distribution modeling of time-to-failure to determine wear-out characteristics.</p>
+                            <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1.25rem;">
+                                <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 1rem; border-radius: 8px;"><span style="font-size: 0.75rem; color: #64748b;">Shape Parameter (beta)</span><strong style="font-size: 1.125rem; color: #2563eb; display: block; margin-top: 0.25rem;">2.35 (Wear-out)</strong></div>
+                                <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 1rem; border-radius: 8px;"><span style="font-size: 0.75rem; color: #64748b;">Characteristic Life (eta)</span><strong style="font-size: 1.125rem; color: #059669; display: block; margin-top: 0.25rem;">1,420 Operating Hrs</strong></div>
+                                <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 1rem; border-radius: 8px;"><span style="font-size: 0.75rem; color: #64748b;">Probability of Failure (@ 1,000 hrs)</span><strong style="font-size: 1.125rem; color: #d97706; display: block; margin-top: 0.25rem;">34.2%</strong></div>
+                            </div>
+                            <div style="background: #f8fafc; padding: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 0.75rem; color: #475569;">
+                                <strong>Weibull Engineering Conclusion:</strong> A shape parameter beta > 2.0 confirms an increasing hazard rate indicative of mechanical wear-out phase. Component replacement schedules should be enforced strictly before reaching 1,200 operating hours to suppress unplanned downtime.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="view-reports" class="app-view space-y-6 hidden">
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <div>
+                                <h3 style="font-size: 1rem; font-weight: bold; color: #0f172a;"><i class="fa-solid fa-file-shield" style="color: #2563eb; margin-right: 0.5rem;"></i> Multi-Year Reports & Direct Download Suite</h3>
+                                <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">Select target extraction year from available data, preview formatted document output, and execute instant direct download.</p>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                <div style="display: flex; align-items: center; gap: 0.5rem; background: #f8fafc; border: 1px solid #cbd5e1; padding: 0.3rem 0.75rem; border-radius: 6px;">
+                                    <label for="reportYearSelect" style="font-size: 0.7rem; margin-bottom: 0; color: #475569;">Extraction Year:</label>
+                                    <select id="reportYearSelect" onchange="updateReportPreview()" style="background: transparent; border: none; font-weight: bold; color: #2563eb; font-size: 0.8125rem; width: 85px; padding: 0;"></select>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                            <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 1.25rem; border-radius: 8px; display: flex; flex-direction: column; justify-content: space-between;">
+                                <div>
+                                    <div style="display: flex; align-items: center; gap: 0.5rem; color: #dc2626; font-weight: bold; font-size: 0.875rem; margin-bottom: 0.5rem;"><i class="fa-solid fa-file-pdf"></i> Reliability & MTBF/MTTR Report</div>
+                                    <p style="font-size: 0.75rem; color: #64748b;">Comprehensive engineering uptime, MTBF, and repair speed audit report.</p>
+                                </div>
+                                <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                                    <button onclick="previewReport('Reliability')" class="btn-primary" style="flex: 1; padding: 0.4rem; font-size: 0.75rem;"><i class="fa-solid fa-eye"></i> Preview</button>
+                                    <button onclick="downloadReport('Reliability')" class="btn-emerald" style="flex: 1; padding: 0.4rem; font-size: 0.75rem;"><i class="fa-solid fa-download"></i> Download</button>
+                                </div>
+                            </div>
+                            <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 1.25rem; border-radius: 8px; display: flex; flex-direction: column; justify-content: space-between;">
+                                <div>
+                                    <div style="display: flex; align-items: center; gap: 0.5rem; color: #2563eb; font-weight: bold; font-size: 0.875rem; margin-bottom: 0.5rem;"><i class="fa-solid fa-calendar-days"></i> PM Master Schedule Compliance</div>
+                                    <p style="font-size: 0.75rem; color: #64748b;">Full year preventative maintenance schedule, completion status, and audit logs.</p>
+                                </div>
+                                <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                                    <button onclick="previewReport('PM')" class="btn-primary" style="flex: 1; padding: 0.4rem; font-size: 0.75rem;"><i class="fa-solid fa-eye"></i> Preview</button>
+                                    <button onclick="downloadReport('PM')" class="btn-emerald" style="flex: 1; padding: 0.4rem; font-size: 0.75rem;"><i class="fa-solid fa-download"></i> Download</button>
+                                </div>
+                            </div>
+                            <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 1.25rem; border-radius: 8px; display: flex; flex-direction: column; justify-content: space-between;">
+                                <div>
+                                    <div style="display: flex; align-items: center; gap: 0.5rem; color: #d97706; font-weight: bold; font-size: 0.875rem; margin-bottom: 0.5rem;"><i class="fa-solid fa-file-excel"></i> Master EJR & Downtime Logs</div>
+                                    <p style="font-size: 0.75rem; color: #64748b;">Complete Equipment Job Request records, HOD sign-offs, and repair times.</p>
+                                </div>
+                                <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                                    <button onclick="previewReport('EJR')" class="btn-primary" style="flex: 1; padding: 0.4rem; font-size: 0.75rem;"><i class="fa-solid fa-eye"></i> Preview</button>
+                                    <button onclick="downloadReport('EJR')" class="btn-emerald" style="flex: 1; padding: 0.4rem; font-size: 0.75rem;"><i class="fa-solid fa-download"></i> Download</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="background: #e2e8f0; padding: 1.5rem; border-radius: 10px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                                <h4 style="font-size: 0.8125rem; font-weight: bold; text-transform: uppercase; color: #334155;"><i class="fa-solid fa-desktop"></i> Live Report Format Preview (<span id="previewTypeLabel">Reliability & MTBF</span> - Year <span id="previewYearLabel">2026</span>)</h4>
+                                <button onclick="downloadCurrentPreview()" class="btn-emerald" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;"><i class="fa-solid fa-download"></i> Direct Download File</button>
+                            </div>
+                            <div id="reportPreviewContainer" class="report-preview-sheet"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="view-admin" class="app-view space-y-6 hidden">
+                    <div class="card">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 1rem;">
+                            <div>
+                                <h3 style="font-size: 1rem; font-weight: bold; color: #d97706; display: flex; align-items: center; gap: 0.5rem;"><i class="fa-solid fa-shield-halved"></i> Superuser Administration Console & Settings</h3>
+                                <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">Manage system users, credentials, roles, and global configurations.</p>
+                            </div>
+                            <span class="badge badge-amber" style="font-family: monospace;">ACCESS LEVEL: ROOT</span>
+                        </div>
+                        <div style="margin-bottom: 1.5rem;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+                                <h4 style="font-size: 0.75rem; font-weight: bold; text-transform: uppercase; color: #334155;"><i class="fa-solid fa-users-gear" style="color: #2563eb; margin-right: 0.5rem;"></i> Registered System Users</h4>
+                                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                    <span style="font-size: 0.75rem; color: #64748b;">Total: <strong id="userCountBadge" style="color: #0f172a;">4</strong></span>
+                                    <button onclick="openAddUserModal()" class="btn-primary" style="padding: 0.35rem 0.65rem; font-size: 0.75rem;"><i class="fa-solid fa-user-plus"></i> Add User</button>
+                                </div>
+                            </div>
+                            <div style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+                                <table>
+                                    <thead><tr style="background: #f8fafc;"><th>Username</th><th>Password</th><th>Assigned Role & Name</th><th style="text-align: right;">Actions</th></tr></thead>
+                                    <tbody id="adminUserTableBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- MODALS -->
+    <div id="ejrModal" class="modal-overlay hidden">
+        <div class="modal-box" style="max-width: 580px;">
+            <h3 id="ejrModalTitle" style="font-size: 1rem; font-weight: bold; color: #0f172a; margin-bottom: 1rem;">Register New EJR</h3>
+            <form id="ejrForm" onsubmit="saveEjrRecord(event)" style="display: flex; flex-direction: column; gap: 1rem;">
+                <input type="hidden" id="editEjrIndex" value="-1">
+                <div class="grid" style="grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem;">
+                    <div><label>Date</label><input type="text" id="formEjrDate" required placeholder="e.g. 3/11/2025"></div>
+                    <div><label>EJR No</label><input type="text" id="formEjrNo" required placeholder="e.g. 6108"></div>
+                </div>
+                <div class="grid" style="grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem;">
+                    <div><label>Department</label>
+                        <select id="formEjrDept">
+                            <option value="DS">DS</option><option value="NVH">NVH</option><option value="Felt">Felt</option><option value="FET">FET</option>
+                        </select>
+                    </div>
+                    <div><label>Machine/ Area</label><input type="text" id="formEjrMachine" placeholder="e.g. Kneader 1500L"></div>
+                </div>
+                <div><label>Job Request</label><input type="text" id="formEjrJobRequest" required placeholder="Describe the job request"></div>
+                <div><label>Propose/Action Taken</label><textarea id="formEjrPropose" rows="3" placeholder="Proposed action / steps taken"></textarea></div>
+                <div class="grid" style="grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem;">
+                    <div><label>Plan Job Date</label><input type="text" id="formEjrPlanDate" placeholder="e.g. 25/5/2026"></div>
+                    <div><label>Person In Charge</label><input type="text" id="formEjrPic" placeholder="e.g. Haziq"></div>
+                </div>
+                <div class="grid" style="grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem;">
+                    <div><label>Job date start</label><input type="text" id="formEjrJobStart" placeholder="e.g. 25/5/2026"></div>
+                    <div><label>Time Start</label><input type="text" id="formEjrTimeStart" placeholder="e.g. 9:00 AM"></div>
+                    <div><label>Time Finish</label><input type="text" id="formEjrTimeFinish" placeholder="e.g. 10:00 AM"></div>
+                </div>
+                <div class="grid" style="grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem;">
+                    <div><label>Min</label><input type="number" id="formEjrMin" placeholder="e.g. 60"></div>
+                    <div><label>Downtime (min)</label><input type="number" id="formEjrDowntime" placeholder="e.g. 60"></div>
+                </div>
+                <div><label>Notes</label><textarea id="formEjrNotes" rows="2" placeholder="Additional notes"></textarea></div>
+                <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.5rem;">
+                    <button type="button" onclick="closeEjrModal()" style="padding: 0.5rem 1rem; background: #e2e8f0; border: none; border-radius: 6px; font-weight: 600; font-size: 0.75rem; cursor: pointer;">Cancel</button>
+                    <button type="submit" class="btn-primary" style="padding: 0.5rem 1rem;">Save & Sync Excel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="summaryModal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <h3 id="summaryModalTitle" style="font-size: 1rem; font-weight: bold; color: #0f172a; margin-bottom: 1rem;">Edit Line Summary & Status</h3>
+            <form onsubmit="saveLineSummary(event)" style="display: flex; flex-direction: column; gap: 1rem;">
+                <input type="hidden" id="editSummaryDeptKey" value="">
+                <div><label id="summaryModalDeptLabel">Department Summary</label>
+                    <textarea id="formLineSummaryText" rows="4" required style="width: 100%; padding: 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.875rem;" placeholder="Enter current situational commentary..."></textarea>
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.5rem;">
+                    <button type="button" onclick="closeSummaryModal()" style="padding: 0.5rem 1rem; background: #e2e8f0; border: none; border-radius: 6px; font-weight: 600; font-size: 0.75rem; cursor: pointer;">Cancel</button>
+                    <button type="submit" class="btn-primary" style="padding: 0.5rem 1rem;">Save Summary</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="uptimeConfigModal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <div style="display: flex; align-items: center; gap: 0.65rem; margin-bottom: 0.5rem;">
+                <div style="background: #eff6ff; color: #2563eb; width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><i class="fa-solid fa-sliders"></i></div>
+                <div>
+                    <h3 id="uptimeConfigModalTitle" style="font-size: 1rem; font-weight: bold; color: #0f172a;">Configure Uptime</h3>
+                    <p id="uptimeConfigModalSubtitle" style="font-size: 0.75rem; color: #64748b;">Set uptime value for this production line.</p>
+                </div>
+            </div>
+            <form onsubmit="saveUptimeConfig(event)" style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem;">
+                <input type="hidden" id="uptimeConfigDeptKey" value="">
+                <div><label>Uptime (Hours)</label>
+                    <input type="number" step="0.1" min="0" id="uptimeConfigValue" required placeholder="e.g. 702">
+                    <p style="font-size: 0.7rem; color: #64748b; margin-top: 0.35rem;">Enter the total operating hours for this line. The value will be displayed as "&lt;value&gt; hrs".</p>
+                </div>
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.75rem;">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.75rem;"><span style="color: #64748b;">Current Uptime:</span><strong id="uptimeConfigCurrentValue" style="color: #0f172a;">—</strong></div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-top: 0.35rem;"><span style="color: #64748b;">Department:</span><strong id="uptimeConfigDeptName" style="color: #0f172a;">—</strong></div>
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.5rem;">
+                    <button type="button" onclick="closeUptimeConfigModal()" style="padding: 0.5rem 1rem; background: #e2e8f0; border: none; border-radius: 6px; font-weight: 600; font-size: 0.75rem; cursor: pointer;">Cancel</button>
+                    <button type="submit" class="btn-primary" style="padding: 0.5rem 1rem;"><i class="fa-solid fa-floppy-disk" style="margin-right: 0.3rem;"></i> Save Uptime</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="pmModal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <h3 id="pmModalTitle" style="font-size: 1rem; font-weight: bold; color: #0f172a; margin-bottom: 1rem;">Register Preventive Maintenance</h3>
+            <form id="pmForm" onsubmit="savePmRecord(event)" style="display: flex; flex-direction: column; gap: 1rem;">
+                <input type="hidden" id="editPmIndex" value="-1">
+                <div><label>Department Code</label>
+                    <select id="formPmDept"><option value="DS">DS</option><option value="NVH">NVH</option><option value="Felt">Felt</option></select>
+                </div>
+                <div><label>Machine Name</label><input type="text" id="formPmMachine" required placeholder="e.g. Press Machine #3"></div>
+                <div><label>Scheduled Date</label><input type="date" id="formPmDate" required></div>
+                <div><label>PM Description</label><input type="text" id="formPmDesc" required placeholder="e.g. Lubrication & Bearing Check"></div>
+                <div><label>Execution Status</label>
+                    <select id="formPmStatus" onchange="togglePostponeField()"><option value="Pending">Pending</option><option value="Done">Done</option><option value="Postponed">Postponed</option></select>
+                </div>
+                <div id="postponedDateWrapper" class="hidden"><label>Postponed To Date</label><input type="date" id="formPmPostponedDate"></div>
+                <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.5rem;">
+                    <button type="button" onclick="closePmModal()" style="padding: 0.5rem 1rem; background: #e2e8f0; border: none; border-radius: 6px; font-weight: 600; font-size: 0.75rem; cursor: pointer;">Cancel</button>
+                    <button type="submit" class="btn-primary" style="padding: 0.5rem 1rem;">Save PM Schedule</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="userModal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <h3 id="userModalTitle" style="font-size: 1rem; font-weight: bold; color: #0f172a; margin-bottom: 1rem;">Add System User</h3>
+            <form onsubmit="saveUserRecord(event)" style="display: flex; flex-direction: column; gap: 1rem;">
+                <input type="hidden" id="editUserIndex" value="-1">
+                <div><label>Username</label><input type="text" id="formUserUsername" required placeholder="e.g. supervisor1"></div>
+                <div><label>Password</label><input type="text" id="formUserPassword" required placeholder="e.g. secret123"></div>
+                <div><label>Full Name</label><input type="text" id="formUserName" required placeholder="e.g. Enc. Kamal"></div>
+                <div><label>Role</label>
+                    <select id="formUserRole">
+                        <option value="Super Administrator">Super Administrator</option>
+                        <option value="Maintenance Manager">Maintenance Manager</option>
+                        <option value="Plant Engineer">Plant Engineer</option>
+                        <option value="Department Clerk">Department Clerk</option>
+                    </select>
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.5rem;">
+                    <button type="button" onclick="closeUserModal()" style="padding: 0.5rem 1rem; background: #e2e8f0; border: none; border-radius: 6px; font-weight: 600; font-size: 0.75rem; cursor: pointer;">Cancel</button>
+                    <button type="submit" class="btn-primary" style="padding: 0.5rem 1rem;">Save User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="targetModal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <h3 style="font-size: 1rem; font-weight: bold; color: #0f172a; margin-bottom: 1rem;">Configure Individual Line MTBF & MTTR Targets</h3>
+            <form onsubmit="savePerformanceTargets(event)" style="display: flex; flex-direction: column; gap: 1rem;">
+                <div style="background: #f8fafc; padding: 0.75rem; border-radius: 8px; border: 1px solid #e2e8f0;">
+                    <strong style="font-size: 0.8125rem; color: #2563eb; display: block; margin-bottom: 0.5rem;">Dampening Sheet (DS)</strong>
+                    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem;">
+                        <div><label>MTBF Target (Hrs)</label><input type="number" step="0.5" id="inputTargetMtbf_DS" value="50.0" required></div>
+                        <div><label>MTTR Target (Hrs)</label><input type="number" step="0.1" id="inputTargetMttr_DS" value="2.0" required></div>
+                    </div>
+                </div>
+                <div style="background: #f8fafc; padding: 0.75rem; border-radius: 8px; border: 1px solid #e2e8f0;">
+                    <strong style="font-size: 0.8125rem; color: #059669; display: block; margin-bottom: 0.5rem;">Insulator (NVH)</strong>
+                    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem;">
+                        <div><label>MTBF Target (Hrs)</label><input type="number" step="0.5" id="inputTargetMtbf_NVH" value="55.0" required></div>
+                        <div><label>MTTR Target (Hrs)</label><input type="number" step="0.1" id="inputTargetMttr_NVH" value="1.5" required></div>
+                    </div>
+                </div>
+                <div style="background: #f8fafc; padding: 0.75rem; border-radius: 8px; border: 1px solid #e2e8f0;">
+                    <strong style="font-size: 0.8125rem; color: #d97706; display: block; margin-bottom: 0.5rem;">Feltline (Felt)</strong>
+                    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem;">
+                        <div><label>MTBF Target (Hrs)</label><input type="number" step="0.5" id="inputTargetMtbf_Felt" value="45.0" required></div>
+                        <div><label>MTTR Target (Hrs)</label><input type="number" step="0.1" id="inputTargetMttr_Felt" value="2.5" required></div>
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.5rem;">
+                    <button type="button" onclick="closeTargetModal()" style="padding: 0.5rem 1rem; background: #e2e8f0; border: none; border-radius: 6px; font-weight: 600; font-size: 0.75rem; cursor: pointer;">Cancel</button>
+                    <button type="submit" class="btn-primary" style="padding: 0.5rem 1rem;">Update All Line Targets</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="uptimeTargetModal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <h3 style="font-size: 1rem; font-weight: bold; color: #0f172a; margin-bottom: 1rem;">Configure Uptime Target Limits by Year</h3>
+            <form onsubmit="saveUptimeTargets(event)" style="display: flex; flex-direction: column; gap: 1rem;" id="uptimeTargetsFormContainer"></form>
+        </div>
+    </div>
+
+    <script>
+        let systemUsers = [
+            { username: "admin", password: "123", role: "Super Administrator", name: "System Admin" },
+            { username: "manager", password: "123", role: "Maintenance Manager", name: "Enc. Rahman" },
+            { username: "Azhan", password: "123", role: "Plant Engineer", name: "Ts. Aizul Azhan" },
+            { username: "clerk", password: "123", role: "Department Clerk", name: "Ahmad Haziq" }
+        ];
+
+        let currentUser = null;
+        let selectedDept = 'ALL';
+        let currentMonthView = null;
+        let selectedPmYear = '2026';
+        let selectedDashboardYear = '2026';
+        let currentReportType = 'Reliability';
+
+        let ejrFilters = { search: '', dept: 'ALL', status: 'ALL', year: 'ALL' };
+
+        function extractEjrYear(item) {
+            const src = String(item.date || '');
+            const m = src.match(/\b(19\d{2}|20\d{2})\b/);
+            return m ? m[1] : '';
+        }
+
+        // Extracts the month (1-12) from an EJR record's Date field.
+        // Handles both ISO ("2025-11-03 00:00:00") and slash ("3/11/2025") formats.
+        function extractEjrMonth(item) {
+            const s = String(item.date || '').trim();
+            const iso = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+            if (iso) return parseInt(iso[2], 10);
+            const dmy = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+            if (dmy) {
+                const a = parseInt(dmy[1], 10), b = parseInt(dmy[2], 10);
+                if (b > 12) return a;   // first part must be month (m/d/y)
+                if (a > 12) return b;   // second part must be month (d/m/y)
+                return b;               // ambiguous — assume d/m/y
+            }
+            return 0;
+        }
+
+        function populateEjrFilterDropdowns() {
+            const deptSel = document.getElementById('ejrFilterDept');
+            const yearSel = document.getElementById('ejrFilterYear');
+            if (!deptSel || !yearSel) return;
+            const curDept = deptSel.value || ejrFilters.dept || 'ALL';
+            const curYear = yearSel.value || ejrFilters.year || 'ALL';
+            const depts = new Set();
+            masterEjrList.forEach(it => { if (it.dept) depts.add(it.dept); });
+            const sortedDepts = Array.from(depts).sort();
+            deptSel.innerHTML = '<option value="ALL">All Departments</option>' +
+                sortedDepts.map(d => `<option value="${d}">${d}</option>`).join('');
+            const years = new Set();
+            masterEjrList.forEach(it => { const y = extractEjrYear(it); if (y) years.add(y); });
+            const sortedYears = Array.from(years).sort().reverse();
+            yearSel.innerHTML = '<option value="ALL">All Years</option>' +
+                sortedYears.map(y => `<option value="${y}">${y}</option>`).join('');
+            if ([...deptSel.options].some(o => o.value === curDept)) deptSel.value = curDept;
+            else { deptSel.value = 'ALL'; ejrFilters.dept = 'ALL'; }
+            if ([...yearSel.options].some(o => o.value === curYear)) yearSel.value = curYear;
+            else { yearSel.value = 'ALL'; ejrFilters.year = 'ALL'; }
+        }
+
+        function applyEjrFilters() {
+            const s  = document.getElementById('ejrFilterSearch');
+            const d  = document.getElementById('ejrFilterDept');
+            const st = document.getElementById('ejrFilterStatus');
+            const y  = document.getElementById('ejrFilterYear');
+            ejrFilters.search = s  ? s.value.trim().toLowerCase() : '';
+            ejrFilters.dept   = d  ? d.value : 'ALL';
+            ejrFilters.status = st ? st.value : 'ALL';
+            ejrFilters.year   = y  ? y.value : 'ALL';
+            renderEjrTables();
+        }
+
+        function clearEjrFilters() {
+            ejrFilters = { search: '', dept: 'ALL', status: 'ALL', year: 'ALL' };
+            const s  = document.getElementById('ejrFilterSearch');
+            const d  = document.getElementById('ejrFilterDept');
+            const st = document.getElementById('ejrFilterStatus');
+            const y  = document.getElementById('ejrFilterYear');
+            if (s)  s.value = '';
+            if (d)  d.value = 'ALL';
+            if (st) st.value = 'ALL';
+            if (y)  y.value = 'ALL';
+            renderEjrTables();
+        }
+
+        function getFilteredEjrList() {
+            const needle = ejrFilters.search;
+            return masterEjrList.filter(item => {
+                if (ejrFilters.dept !== 'ALL' && (item.dept || '') !== ejrFilters.dept) return false;
+                if (ejrFilters.status !== 'ALL' && (item.status || 'Open') !== ejrFilters.status) return false;
+                if (ejrFilters.year !== 'ALL' && extractEjrYear(item) !== ejrFilters.year) return false;
+                if (needle) {
+                    const haystack = [item.ejrNo, item.machine, item.jobRequest, item.pic, item.propose, item.notes, item.dept, item.date]
+                        .map(v => String(v || '').toLowerCase()).join(' ');
+                    if (!haystack.includes(needle)) return false;
+                }
+                return true;
+            });
+        }
+
+        function computeFilteredDowntimeSummary(records) {
+            const DEPT_TO_LINE = { "DS": "DS", "NVH": "NVH", "FET": "Felt" };
+            const perLineMin = { "DS": 0, "NVH": 0, "Felt": 0 };
+            const perLineCount = { "DS": 0, "NVH": 0, "Felt": 0 };
+            let grandMin = 0;
+            let contributingRecords = 0;
+            (records || []).forEach(item => {
+                const rawDept = String(item.dept || '').trim().toUpperCase();
+                const lineKey = DEPT_TO_LINE[rawDept];
+                if (!lineKey) return;
+                const dtMin = parseFloat(item.downtime);
+                if (isNaN(dtMin) || dtMin <= 0) return;
+                perLineMin[lineKey] += dtMin;
+                perLineCount[lineKey] += 1;
+                grandMin += dtMin;
+                contributingRecords += 1;
+            });
+            return { perLineMin, perLineCount, grandMin, contributingRecords };
+        }
+
+        function updateHeaderDeptButtons(dept) {
+            ['all', 'ds', 'nvh', 'felt'].forEach(d => {
+                const btn = document.getElementById('dept-' + d);
+                if (!btn) return;
+                btn.style.background = 'transparent';
+                btn.style.color = '#475569';
+            });
+            const activeBtn = document.getElementById('dept-' + String(dept || '').toLowerCase());
+            if (activeBtn) { activeBtn.style.background = '#2563eb'; activeBtn.style.color = '#fff'; }
+        }
+
+        let performanceTargets = {
+            "DS": { mtbf: 50.0, mttr: 2.0 },
+            "NVH": { mtbf: 55.0, mttr: 1.5 },
+            "Felt": { mtbf: 45.0, mttr: 2.5 }
+        };
+
+        let uptimeLineTargets = { "2026": 95.0, "2025": 94.0, "2024": 90.0 };
+
+        let lineGraphDatasetYear = '2026';
+
+        const deptData = {
+            "DS": { name: "Dampening Sheet (DS)", uptime: "702 hrs", downtime: "18 hrs", mtbfVal: 48.5, mttrVal: 1.8, mtbf: "48.5 hrs", mttr: "1.8 hrs", pmComp: "96.5%", summary: "Line operating stably with minor hydraulic adjustments completed. OEE performing above target." },
+            "NVH": { name: "Insulator (NVH)", uptime: "710 hrs", downtime: "10 hrs", mtbfVal: 52.0, mttrVal: 1.2, mtbf: "52.0 hrs", mttr: "1.2 hrs", pmComp: "98.0%", summary: "High thermal stability achieved. Preventive maintenance completed on schedule with zero unplanned stoppages." },
+            "Felt": { name: "Feltline (Felt)", uptime: "695 hrs", downtime: "25 hrs", mtbfVal: 44.2, mttrVal: 2.1, mtbf: "44.2 hrs", mttr: "2.1 hrs", pmComp: "92.0%", summary: "Chimney airflow recovery evaluation completed successfully. Monitoring particulate accumulation on needle loom bearings." }
+        };
+
+        let masterEjrList = [
+            { date: "3/11/2025", ejrNo: "6108", dept: "DS", machine: "Kneader 1500L", jobRequest: "Bearing mixer spoilt (front bearing)", propose: "1) Need time to production stop and verify size of that bearing\n2) Bearing has been identified with supplier Rugau", planDate: "25/5/2026", pic: "Haziq", jobStart: "25/5/2026", timeStart: "9:00 AM", timeFinish: "10:00 AM", min: "60", downtime: "", notes: "CLOSE EJR first since need long shutdown about 14 days for repair job and plan to repair mixer 1 set fow kneader 800L first" },
+            { date: "3/9/2025", ejrNo: "0005", dept: "FET", machine: "Bale Opener 5", jobRequest: "Spike roller shaft need to repair", propose: "Replacement of bearings on both left and right sides. Isse verified as not related to the shaft", planDate: "10/4/2026", pic: "Akim Rubel", jobStart: "10/4/2026", timeStart: "10:00 AM", timeFinish: "11:50 AM", min: "110", downtime: "", notes: "30/12/25: Barang belum receive, otw" },
+            { date: "15/11/2025", ejrNo: "0008", dept: "DS", machine: "Kneader 1500L", jobRequest: "Material leaking", propose: "1) Need to plan for repair and change mixer. Contact DS PIC 18/11/2025 for further planning\n2) 1 set of mixer shaft need to be replace include packing. This job already consult contractor need at least 14 days for the job. Machine still can continue run.\n3) Check kneader 1500L, CLOSE EJR first, need to plan long date shutdown", planDate: "23/11/2025", pic: "Haziq", jobStart: "23/11/2025", timeStart: "9:00 AM", timeFinish: "12:00 PM", min: "180", downtime: "", notes: "" },
+            { date: "1/12/2025", ejrNo: "0035", dept: "DS", machine: "Burner EcoFETam Multicolor", jobRequest: "DS meter gas not function", propose: "Repair gear of meter", planDate: "13/1/2026", pic: "Khai Rubel", jobStart: "13/1/2026", timeStart: "9:00 AM", timeFinish: "5:00 PM", min: "480", downtime: "", notes: "Machine still running, no downtime" }
+        ];
+        masterEjrList.forEach(it => { it.status = inferEjrStatus(it.notes); });
+
+        function inferEjrStatus(notes) {
+            const n = (notes || '').toLowerCase();
+            if (n.includes('close')) return 'Closed';
+            if (n.includes('progress') || n.includes('ongoing') || n.includes('otw') || n.includes('belum')) return 'In Progress';
+            return 'Open';
+        }
+
+        let ejrDerivedStats = {};
+
+        function recomputeDeptStatsFromEjr() {
+            const stats = {};
+            masterEjrList.forEach(item => {
+                const dept = item.dept || 'Unknown';
+                if (!stats[dept]) stats[dept] = { count: 0, totalMin: 0, minSampleCount: 0, totalDowntimeMin: 0 };
+                stats[dept].count++;
+                const minVal = parseFloat(item.min);
+                if (!isNaN(minVal)) { stats[dept].totalMin += minVal; stats[dept].minSampleCount++; }
+                const dtVal = parseFloat(item.downtime);
+                if (!isNaN(dtVal)) stats[dept].totalDowntimeMin += dtVal;
+            });
+            ejrDerivedStats = stats;
+            ['DS', 'NVH', 'Felt'].forEach(k => {
+                const s = stats[k];
+                if (s && s.minSampleCount > 0) {
+                    const avgHrs = s.totalMin / s.minSampleCount / 60;
+                    deptData[k].mttrVal = parseFloat(avgHrs.toFixed(2));
+                    deptData[k].mttr = avgHrs.toFixed(1) + " hrs";
+                }
+            });
+            recomputeDeptDowntimeFromEjr();
+        }
+
+        function recomputeDeptDowntimeFromEjr() {
+            const DEPT_TO_LINE = { "DS": "DS", "NVH": "NVH", "FET": "Felt" };
+            const accumMin = { "DS": 0, "NVH": 0, "Felt": 0 };
+            const recordCount = { "DS": 0, "NVH": 0, "Felt": 0 };
+            masterEjrList.forEach(item => {
+                const rawDept = String(item.dept || '').trim().toUpperCase();
+                const lineKey = DEPT_TO_LINE[rawDept];
+                if (!lineKey) return;
+                const dtMin = parseFloat(item.downtime);
+                if (isNaN(dtMin) || dtMin <= 0) return;
+                accumMin[lineKey] += dtMin;
+                recordCount[lineKey] += 1;
+            });
+            Object.keys(accumMin).forEach(k => {
+                const totalMin = accumMin[k];
+                const hrs = totalMin / 60;
+                deptData[k].downtimeMinTotal    = totalMin;
+                deptData[k].downtimeRecordCount = recordCount[k];
+                deptData[k].downtime            = hrs.toFixed(1) + " hrs";
+            });
+        }
+
+        let masterPmList = [
+            { id: 1, year: '2026', dept: "DS", machine: "Hydraulic Press #1", date: "2026-09-20", desc: "Oil filter change & seal check", status: "Pending", postponedDate: "" },
+            { id: 2, year: '2026', dept: "NVH", machine: "Thermoforming Line", date: "2026-09-22", desc: "Heater element calibration", status: "Pending", postponedDate: "" },
+            { id: 3, year: '2026', dept: "Felt", machine: "Needle Loom #2", date: "2026-10-05", desc: "Bearing grease replenishment", status: "Done", postponedDate: "" },
+            { id: 4, year: '2026', dept: "DS", machine: "Mixing Vat B", date: "2026-04-12", desc: "Agitator gearbox overhaul", status: "Done", postponedDate: "" },
+            { id: 5, year: '2026', dept: "Felt", machine: "Air Extraction Chimney", date: "2026-04-18", desc: "Airflow performance evaluation", status: "Done", postponedDate: "" },
+            { id: 6, year: '2025', dept: "DS", machine: "Hydraulic Press #1", date: "2025-03-15", desc: "Annual hydraulic fluid flush", status: "Done", postponedDate: "" },
+            { id: 7, year: '2025', dept: "NVH", machine: "Conveyor Belt Alpha", date: "2025-06-10", desc: "Roller bearing replacement", status: "Done", postponedDate: "" },
+            { id: 8, year: '2025', dept: "Felt", machine: "Feltline Main Dryer", date: "2025-11-20", desc: "Burner nozzle decarbonization", status: "Done", postponedDate: "" },
+            { id: 9, year: '2024', dept: "DS", machine: "Cutting Die Unit 2", date: "2024-05-12", desc: "Blade alignment & calibration", status: "Done", postponedDate: "" },
+            { id: 10, year: '2024', dept: "Felt", machine: "Exhaust Ductwork", date: "2024-08-14", desc: "Duct cleaning & static pressure test", status: "Done", postponedDate: "" }
+        ];
+
+        // ===== Shared PM data via Google Sheets (replace with your deployed Apps Script URL) =====
+        const PM_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx9Y3_DtTbzGRYQ_TTeNBUcWHxigayiX4cZD0Sh1FIA-weqDyGeNFmmAl7KkP2f3vBLEQ/exec";
+
+        async function loadPmListFromServer() {
+            try {
+                const res = await fetch(PM_SCRIPT_URL);
+                const json = await res.json();
+                if (json.success && Array.isArray(json.data)) {
+                    masterPmList = json.data.map(r => ({ ...r, id: Number(r.id) || r.id }));
+                }
+            } catch (err) {
+                console.warn('Could not load PM data from server, using local defaults.', err);
+            }
+        }
+
+        async function addOrUpdatePmOnServer(record, isNew) {
+            // Update the screen immediately so it never looks "stuck" even if the network/server is slow or unreachable
+            if (isNew) {
+                masterPmList.push(record);
+            } else {
+                const localIdx = masterPmList.findIndex(p => String(p.id) === String(record.id));
+                if (localIdx !== -1) masterPmList[localIdx] = record;
+                else masterPmList.push(record);
+            }
+            try {
+                await fetch(PM_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: isNew ? 'add' : 'update', record: record })
+                });
+                await loadPmListFromServer();
+            } catch (err) {
+                console.warn('Could not sync PM save to server. Change is still visible locally.', err);
+            }
+        }
+
+        async function deletePmOnServer(id) {
+            // Remove locally right away
+            const localIdx = masterPmList.findIndex(p => String(p.id) === String(id));
+            if (localIdx !== -1) masterPmList.splice(localIdx, 1);
+            try {
+                await fetch(PM_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: 'delete', id: id })
+                });
+                await loadPmListFromServer();
+            } catch (err) {
+                console.warn('Could not sync PM delete to server. Change is still removed locally.', err);
+            }
+        }
+
+        function getAvailableYears() {
+            let yearsSet = new Set();
+            masterEjrList.forEach(item => {
+                const src = `${item.date || ''} ${item.planDate || ''} ${item.jobStart || ''}`;
+                const match = src.match(/\b(20\d{2}|19\d{2})\b/);
+                if (match) yearsSet.add(match[1]);
+            });
+            masterPmList.forEach(item => {
+                if (item.year) yearsSet.add(item.year.toString());
+                if (item.date) { const y = item.date.substring(0, 4); if (y.match(/^\d{4}$/)) yearsSet.add(y); }
+            });
+            let yearsArr = Array.from(yearsSet).sort().reverse();
+            if (yearsArr.length === 0) yearsArr = ["2026", "2025", "2024"];
+            return yearsArr;
+        }
+
+        function refreshDynamicYearSelectors() {
+            let years = getAvailableYears();
+            ['dashboardYearSelector', 'pmYearSelector', 'reportYearSelect'].forEach(id => {
+                const sel = document.getElementById(id);
+                if (sel) {
+                    const currentVal = sel.value || (id === 'pmYearSelector' ? selectedPmYear : id === 'dashboardYearSelector' ? selectedDashboardYear : '2026');
+                    sel.innerHTML = "";
+                    years.forEach(y => {
+                        const opt = document.createElement('option');
+                        opt.value = y; opt.textContent = y;
+                        if (y === currentVal) opt.selected = true;
+                        sel.appendChild(opt);
+                    });
+                }
+            });
+            populateEjrFilterDropdowns();
+        }
+
+        function changeDashboardYear(year) {
+            selectedDashboardYear = year;
+            renderDashboard();
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const u = document.getElementById('loginUser').value.trim();
+            const p = document.getElementById('loginPass').value.trim();
+            const errDiv = document.getElementById('loginError');
+            const found = systemUsers.find(user => user.username.toLowerCase() === u.toLowerCase() && user.password === p);
+
+            if (found) {
+                currentUser = found;
+                document.getElementById('loginModal').classList.add('hidden');
+                document.getElementById('appContainer').classList.remove('dimmed-app');
+                document.getElementById('userNameDisplay').textContent = found.name;
+                document.getElementById('userRoleDisplay').textContent = found.role;
+                document.getElementById('userAvatar').textContent = found.name.substring(0, 2).toUpperCase();
+                const role = found.role;
+                const isPrivileged = ['Super Administrator', 'Maintenance Manager', 'Plant Engineer'].includes(role);
+                document.getElementById('ejrActionsHeader').style.display = 'table-cell';
+                if (isPrivileged) {
+                    document.getElementById('targetConfigPanel').classList.remove('hidden');
+                    document.getElementById('authorizedActionBtns').classList.remove('hidden');
+                    document.getElementById('pmActionBtnContainer').classList.remove('hidden');
+                    document.getElementById('pmTableActionsHeader').style.display = 'table-cell';
+                } else {
+                    document.getElementById('targetConfigPanel').classList.add('hidden');
+                    document.getElementById('authorizedActionBtns').classList.add('hidden');
+                    document.getElementById('pmActionBtnContainer').classList.add('hidden');
+                    document.getElementById('pmTableActionsHeader').style.display = 'none';
+                }
+                const adminNav = document.getElementById('nav-admin');
+                if (found.username.toLowerCase() === 'admin') { adminNav.classList.remove('hidden'); renderAdminUserTable(); }
+                else adminNav.classList.add('hidden');
+
+                refreshDynamicYearSelectors();
+                checkUpcomingPmNotifications();
+                recomputeDeptStatsFromEjr();
+                populateEjrFilterDropdowns();
+                renderDashboard();
+                renderEjrTables();
+                await loadPmListFromServer();
+                renderYearOverview();
+                initCharts();
+                updateReportPreview();
+            } else {
+                errDiv.textContent = "Invalid username or password. Please try again.";
+                errDiv.classList.remove('hidden');
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            document.getElementById('loginUser').value = '';
+            document.getElementById('loginPass').value = '';
+            document.getElementById('loginError').classList.add('hidden');
+            document.getElementById('loginModal').classList.remove('hidden');
+            document.getElementById('appContainer').classList.add('dimmed-app');
+        }
+
+        function switchView(viewId) {
+            if (!currentUser) return;
+            if (viewId === 'admin' && currentUser.username.toLowerCase() !== 'admin') {
+                alert('Access Denied: Admin Console is restricted to Super Administrator only.');
+                return;
+            }
+            document.querySelectorAll('.app-view').forEach(v => v.classList.add('hidden'));
+            document.getElementById('view-' + viewId).classList.remove('hidden');
+            document.querySelectorAll('.sidebar-link').forEach(link => link.classList.remove('active', 'admin-active'));
+            const activeLink = document.getElementById('nav-' + viewId);
+            if (activeLink) {
+                if (viewId === 'admin') activeLink.classList.add('admin-active');
+                else activeLink.classList.add('active');
+            }
+            const titles = {
+                'dashboard': 'Plant Dashboard & Comprehensive Reliability',
+                'ejr': 'EJR Master Register & Excel Uploader',
+                'pm': 'PM Master Schedule & Historical Year Recall',
+                'reliability': 'Advanced Reliability & Diagnostic Suite',
+                'reports': 'Reports & Direct Download Suite',
+                'admin': 'Superuser Administration Console & Settings'
+            };
+            document.getElementById('pageTitle').textContent = titles[viewId] || 'Dashboard';
+            refreshDynamicYearSelectors();
+            if (viewId === 'dashboard') updateDashboardCharts();
+            else if (viewId === 'reliability') { if (reliabilityChartInstance) reliabilityChartInstance.update(); }
+            else if (viewId === 'reports') updateReportPreview();
+        }
+
+        function switchReliabilityAnalysis(moduleKey) {
+            ['trend', 'pm', 'weibull'].forEach(key => {
+                document.getElementById('rel-panel-' + key).classList.add('hidden');
+                const btn = document.getElementById('rel-btn-' + key);
+                btn.style.background = 'transparent';
+                btn.style.color = '#475569';
+            });
+            document.getElementById('rel-panel-' + moduleKey).classList.remove('hidden');
+            const activeBtn = document.getElementById('rel-btn-' + moduleKey);
+            activeBtn.style.background = '#2563eb';
+            activeBtn.style.color = '#fff';
+            if (moduleKey === 'trend' && reliabilityChartInstance) reliabilityChartInstance.update();
+        }
+
+        function setDepartment(dept) {
+            selectedDept = dept;
+            updateHeaderDeptButtons(dept);
+            ejrFilters.dept = dept;
+            const ejrDeptSel = document.getElementById('ejrFilterDept');
+            if (ejrDeptSel && [...ejrDeptSel.options].some(o => o.value === dept)) ejrDeptSel.value = dept;
+            renderDashboard();
+            renderEjrTables();
+        }
+
+        function checkUpcomingPmNotifications() {
+            const today = new Date();
+            let upcomingCount = 0;
+            masterPmList.filter(p => p.year === selectedPmYear).forEach(pm => {
+                const checkDate = pm.status === 'Postponed' && pm.postponedDate ? pm.postponedDate : pm.date;
+                const pDate = new Date(checkDate);
+                const diffDays = Math.ceil((pDate - today) / (1000 * 60 * 60 * 24));
+                if (diffDays >= 0 && diffDays <= 7 && pm.status === 'Pending') upcomingCount++;
+            });
+            const badgeContainer = document.getElementById('notificationBadgeContainer');
+            if (upcomingCount > 0) badgeContainer.innerHTML = `<span class="badge badge-amber"><i class="fa-solid fa-bell"></i> ${upcomingCount} PM(s) due within 1 week</span>`;
+            else badgeContainer.innerHTML = `<span class="badge badge-emerald"><span style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; display: inline-block;"></span> PM Schedule Up to Date</span>`;
+        }
+
+        let individualLineChartInstance = null;
+
+        function openEditSummaryModal(deptKey) {
+            const d = deptData[deptKey]; if (!d) return;
+            document.getElementById('editSummaryDeptKey').value = deptKey;
+            document.getElementById('summaryModalDeptLabel').textContent = `${d.name} - Line Status Summary`;
+            document.getElementById('formLineSummaryText').value = d.summary;
+            document.getElementById('summaryModal').classList.remove('hidden');
+        }
+        function closeSummaryModal() { document.getElementById('summaryModal').classList.add('hidden'); }
+        function saveLineSummary(e) {
+            e.preventDefault();
+            const deptKey = document.getElementById('editSummaryDeptKey').value;
+            const newText = document.getElementById('formLineSummaryText').value.trim();
+            if (deptData[deptKey]) deptData[deptKey].summary = newText;
+            closeSummaryModal();
+            renderDashboard();
+            alert('Production line summary successfully updated!');
+        }
+
+        function openUptimeConfigModal(deptKey) {
+            const d = deptData[deptKey]; if (!d) return;
+            document.getElementById('uptimeConfigDeptKey').value = deptKey;
+            document.getElementById('uptimeConfigModalTitle').textContent = `Configure Uptime — ${d.name}`;
+            document.getElementById('uptimeConfigModalSubtitle').textContent = `Set the individual uptime value for the ${deptKey} production line.`;
+            const numeric = parseFloat(String(d.uptime).replace(/[^\d.\-]/g, ''));
+            document.getElementById('uptimeConfigValue').value = isNaN(numeric) ? '' : numeric;
+            document.getElementById('uptimeConfigCurrentValue').textContent = d.uptime || '—';
+            document.getElementById('uptimeConfigDeptName').textContent = d.name || deptKey;
+            document.getElementById('uptimeConfigModal').classList.remove('hidden');
+        }
+        function closeUptimeConfigModal() { document.getElementById('uptimeConfigModal').classList.add('hidden'); }
+        function saveUptimeConfig(e) {
+            e.preventDefault();
+            const deptKey = document.getElementById('uptimeConfigDeptKey').value;
+            const val = parseFloat(document.getElementById('uptimeConfigValue').value);
+            if (!deptData[deptKey] || isNaN(val) || val < 0) {
+                alert('Please enter a valid non-negative uptime value.');
+                return;
+            }
+            deptData[deptKey].uptime = val + ' hrs';
+            closeUptimeConfigModal();
+            renderDashboard();
+            alert(`Uptime for ${deptData[deptKey].name} successfully updated to ${val} hrs!`);
+        }
+
+        function loadDashboardDatabase(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const data = new Uint8Array(evt.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const { records, errorCode } = parseEjrWorkbookToRecords(workbook);
+                    if (errorCode) { alert(ejrImportErrorMessage(errorCode)); return; }
+                    applyImportedEjrRecords(records, file.name);
+                } catch (err) {
+                    console.error(err);
+                    alert('Error parsing uploaded database file.');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function renderDashboard() {
+            const lineContainer = document.getElementById('dashboardLineStatusContainer');
+            lineContainer.innerHTML = "";
+            const isPrivileged = currentUser && ['Super Administrator', 'Maintenance Manager', 'Plant Engineer'].includes(currentUser.role);
+            const yr = selectedDashboardYear || '2026';
+            let yrFactor = 1.0;
+            if (yr === '2025') yrFactor = 0.98;
+            if (yr === '2024') yrFactor = 0.95;
+
+            if (selectedDept === 'ALL') {
+                lineContainer.style.gridTemplateColumns = 'repeat(3, minmax(0, 1fr))';
+                ['DS', 'NVH', 'Felt'].forEach(k => {
+                    const d = deptData[k];
+                    const adjMtbf = (d.mtbfVal * yrFactor).toFixed(1);
+                    const adjMttr = (d.mttrVal / yrFactor).toFixed(1);
+                    const card1 = document.createElement('div');
+                    card1.style.background = '#f8fafc';
+                    card1.style.border = '1px solid #e2e8f0';
+                    card1.style.padding = '1rem';
+                    card1.style.borderRadius = '8px';
+                    card1.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.35rem;">
+                            <strong style="color: #0f172a; font-size: 0.875rem;">${d.name} (${yr})</strong>
+                            <div style="display: flex; align-items: center; gap: 0.25rem;">
+                                ${isPrivileged ? `<button onclick="openUptimeConfigModal('${k}')" title="Configure individual Uptime value" style="background: none; border: none; color: #059669; cursor: pointer; font-size: 0.75rem; font-weight: 600; padding: 0.15rem 0.35rem; border-radius: 4px;" onmouseover="this.style.background='#ecfdf5'" onmouseout="this.style.background='none'"><i class="fa-solid fa-sliders"></i> Configure</button>` : ''}
+                                ${isPrivileged ? `<button onclick="openEditSummaryModal('${k}')" title="Edit line summary" style="background: none; border: none; color: #2563eb; cursor: pointer; font-size: 0.75rem; font-weight: 600; padding: 0.15rem 0.35rem; border-radius: 4px;" onmouseover="this.style.background='#eff6ff'" onmouseout="this.style.background='none'"><i class="fa-solid fa-pen-to-square"></i> Edit Summary</button>` : ''}
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; margin-top: 0.5rem; font-size: 0.75rem;">
+                            <div>Uptime: <strong>${d.uptime}</strong></div>
+                            <div>Downtime: <strong style="color: #d97706;">${d.downtime}</strong></div>
+                            <div>MTBF: <strong style="color: #2563eb;">${adjMtbf} hrs</strong></div>
+                            <div>MTTR: <strong style="color: #059669;">${adjMttr} hrs</strong></div>
+                        </div>
+                        <div style="margin-top: 0.75rem; padding-top: 0.5rem; border-top: 1px solid #e2e8f0; font-size: 0.75rem;">
+                            <span style="color: #64748b; font-weight: 600; text-transform: uppercase; font-size: 10px; display: block; margin-bottom: 2px;">Line Summary (Editable):</span>
+                            <p style="color: #334155; font-style: italic;">"${d.summary}"</p>
+                        </div>
+                        <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.5rem; border-top: 1px solid #e2e8f0; padding-top: 0.35rem;">PM Compliance: <strong>${d.pmComp}</strong></p>
+                    `;
+                    lineContainer.appendChild(card1);
+                });
+                if (individualLineChartInstance) { individualLineChartInstance.destroy(); individualLineChartInstance = null; }
+            } else {
+                lineContainer.style.gridTemplateColumns = 'repeat(2, minmax(0, 1fr))';
+                const d = deptData[selectedDept];
+                const adjMtbf = (d.mtbfVal * yrFactor).toFixed(1);
+                const adjMttr = (d.mttrVal / yrFactor).toFixed(1);
+                const card1 = document.createElement('div');
+                card1.style.background = '#f8fafc';
+                card1.style.border = '1px solid #e2e8f0';
+                card1.style.padding = '1rem';
+                card1.style.borderRadius = '8px';
+                card1.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.35rem;">
+                        <strong style="color: #0f172a; font-size: 0.875rem;">${d.name} (${yr})</strong>
+                        <div style="display: flex; align-items: center; gap: 0.25rem;">
+                            ${isPrivileged ? `<button onclick="openUptimeConfigModal('${selectedDept}')" title="Configure individual Uptime value" style="background: none; border: none; color: #059669; cursor: pointer; font-size: 0.75rem; font-weight: 600; padding: 0.15rem 0.35rem; border-radius: 4px;" onmouseover="this.style.background='#ecfdf5'" onmouseout="this.style.background='none'"><i class="fa-solid fa-sliders"></i> Configure</button>` : ''}
+                            ${isPrivileged ? `<button onclick="openEditSummaryModal('${selectedDept}')" title="Edit line summary" style="background: none; border: none; color: #2563eb; cursor: pointer; font-size: 0.75rem; font-weight: 600; padding: 0.15rem 0.35rem; border-radius: 4px;" onmouseover="this.style.background='#eff6ff'" onmouseout="this.style.background='none'"><i class="fa-solid fa-pen-to-square"></i> Edit Summary</button>` : ''}
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; margin-top: 0.5rem; font-size: 0.75rem;">
+                        <div>Uptime: <strong>${d.uptime}</strong></div>
+                        <div>Downtime: <strong style="color: #d97706;">${d.downtime}</strong></div>
+                        <div>MTBF: <strong style="color: #2563eb;">${adjMtbf} hrs</strong></div>
+                        <div>MTTR: <strong style="color: #059669;">${adjMttr} hrs</strong></div>
+                    </div>
+                    <div style="margin-top: 0.75rem; padding-top: 0.5rem; border-top: 1px solid #e2e8f0; font-size: 0.75rem;">
+                        <span style="color: #64748b; font-weight: 600; text-transform: uppercase; font-size: 10px; display: block; margin-bottom: 2px;">Line Summary (Editable):</span>
+                        <p style="color: #334155; font-style: italic;">"${d.summary}"</p>
+                    </div>
+                    <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.5rem; border-top: 1px solid #e2e8f0; padding-top: 0.35rem;">PM Compliance: <strong>${d.pmComp}</strong></p>
+                `;
+                lineContainer.appendChild(card1);
+
+                const card2 = document.createElement('div');
+                card2.style.background = '#f8fafc';
+                card2.style.border = '1px solid #e2e8f0';
+                card2.style.padding = '1rem';
+                card2.style.borderRadius = '8px';
+                card2.style.display = 'flex';
+                card2.style.flexDirection = 'column';
+                card2.style.justifyContent = 'space-between';
+                card2.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <h4 style="font-size: 0.75rem; font-weight: bold; text-transform: uppercase; color: #475569;"><i class="fa-solid fa-chart-line" style="color: #2563eb; margin-right: 0.35rem;"></i> Uptime vs Downtime Comparison (${selectedDept})</h4>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <select id="lineGraphYearSelect" onchange="changeLineGraphYear(this.value)" style="font-size: 0.7rem; padding: 2px 6px; width: 85px; font-weight: bold; color: #2563eb;"></select>
+                            <button onclick="openUptimeTargetModal()" title="Edit Target Limits" style="background: #e2e8f0; border: none; padding: 3px 6px; border-radius: 4px; font-size: 0.7rem; cursor: pointer;"><i class="fa-solid fa-sliders"></i></button>
+                        </div>
+                    </div>
+                    <div style="height: 180px; width: 100%; position: relative;"><canvas id="individualLineGraph"></canvas></div>
+                `;
+                lineContainer.appendChild(card2);
+
+                setTimeout(() => {
+                    refreshDynamicYearSelectors();
+                    lineGraphDatasetYear = yr;
+                    renderIndividualLineGraph();
+                }, 50);
+            }
+            updateDashboardCharts();
+            renderDashboardEjrTable();
+        }
+
+        function parseEjrDateForSort(dateStr) {
+            if (!dateStr) return 0;
+            const s = String(dateStr).trim();
+            const iso = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+            if (iso) return new Date(parseInt(iso[1], 10), parseInt(iso[2], 10) - 1, parseInt(iso[3], 10)).getTime();
+            const dmy = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+            if (dmy) {
+                const a = parseInt(dmy[1], 10), b = parseInt(dmy[2], 10), y = parseInt(dmy[3], 10);
+                let day, month;
+                if (a > 12) { day = a; month = b; }
+                else if (b > 12) { day = b; month = a; }
+                else { day = a; month = b; }
+                return new Date(y, month - 1, day).getTime();
+            }
+            return 0;
+        }
+
+        function renderDashboardEjrTable() {
+            const tbody = document.getElementById('dashboardMasterEjrTable');
+            if (!tbody) return;
+            tbody.innerHTML = "";
+            let filtered = masterEjrList;
+            if (selectedDept !== 'ALL') filtered = masterEjrList.filter(item => item.dept === selectedDept);
+            const sorted = filtered.slice().sort((a, b) => {
+                const da = parseEjrDateForSort(a.date), db = parseEjrDateForSort(b.date);
+                if (db !== da) return db - da;
+                const na = parseInt(String(a.ejrNo || '0').replace(/\D/g, ''), 10) || 0;
+                const nb = parseInt(String(b.ejrNo || '0').replace(/\D/g, ''), 10) || 0;
+                return nb - na;
+            });
+            const latest = sorted.slice(0, 10);
+            if (latest.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="14" style="text-align:center; color:#64748b; padding:2rem;">No EJR records available.</td></tr>`;
+                return;
+            }
+            latest.forEach(item => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="white-space: nowrap;">${item.date || ''}</td>
+                        <td><strong>${item.ejrNo || ''}</strong></td>
+                        <td>${item.dept || ''}</td>
+                        <td>${item.machine || ''}</td>
+                        <td style="min-width: 180px;">${item.jobRequest || ''}</td>
+                        <td style="min-width: 220px; white-space: pre-line;">${item.propose || ''}</td>
+                        <td style="white-space: nowrap;">${item.planDate || ''}</td>
+                        <td>${item.pic || ''}</td>
+                        <td style="white-space: nowrap;">${item.jobStart || ''}</td>
+                        <td style="white-space: nowrap;">${item.timeStart || ''}</td>
+                        <td style="white-space: nowrap;">${item.timeFinish || ''}</td>
+                        <td>${item.min || ''}</td>
+                        <td>${item.downtime || ''}</td>
+                        <td style="min-width: 180px; white-space: pre-line;">${item.notes || ''}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        function changeLineGraphYear(year) {
+            lineGraphDatasetYear = year;
+            renderIndividualLineGraph();
+        }
+
+        function openTargetModal() {
+            document.getElementById('inputTargetMtbf_DS').value = performanceTargets["DS"].mtbf;
+            document.getElementById('inputTargetMttr_DS').value = performanceTargets["DS"].mttr;
+            document.getElementById('inputTargetMtbf_NVH').value = performanceTargets["NVH"].mtbf;
+            document.getElementById('inputTargetMttr_NVH').value = performanceTargets["NVH"].mttr;
+            document.getElementById('inputTargetMtbf_Felt').value = performanceTargets["Felt"].mtbf;
+            document.getElementById('inputTargetMttr_Felt').value = performanceTargets["Felt"].mttr;
+            document.getElementById('targetModal').classList.remove('hidden');
+        }
+        function closeTargetModal() { document.getElementById('targetModal').classList.add('hidden'); }
+        function savePerformanceTargets(e) {
+            e.preventDefault();
+            performanceTargets["DS"].mtbf = parseFloat(document.getElementById('inputTargetMtbf_DS').value);
+            performanceTargets["DS"].mttr = parseFloat(document.getElementById('inputTargetMttr_DS').value);
+            performanceTargets["NVH"].mtbf = parseFloat(document.getElementById('inputTargetMtbf_NVH').value);
+            performanceTargets["NVH"].mttr = parseFloat(document.getElementById('inputTargetMttr_NVH').value);
+            performanceTargets["Felt"].mtbf = parseFloat(document.getElementById('inputTargetMtbf_Felt').value);
+            performanceTargets["Felt"].mttr = parseFloat(document.getElementById('inputTargetMttr_Felt').value);
+            closeTargetModal();
+            updateDashboardCharts();
+            alert('Individual line MTBF & MTTR targets successfully updated!');
+        }
+
+        function openUptimeTargetModal() {
+            const container = document.getElementById('uptimeTargetsFormContainer');
+            container.innerHTML = "";
+            const years = getAvailableYears();
+            years.forEach(y => {
+                const val = uptimeLineTargets[y] !== undefined ? uptimeLineTargets[y] : 95.0;
+                container.innerHTML += `<div><label>Year ${y} Target Uptime (%)</label><input type="number" step="0.1" id="targetYear_${y}" value="${val}" required></div>`;
+            });
+            container.innerHTML += `
+                <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.5rem;">
+                    <button type="button" onclick="closeUptimeTargetModal()" style="padding: 0.5rem 1rem; background: #e2e8f0; border: none; border-radius: 6px; font-weight: 600; font-size: 0.75rem; cursor: pointer;">Cancel</button>
+                    <button type="submit" class="btn-primary" style="padding: 0.5rem 1rem;">Save Line Graph Targets</button>
+                </div>
+            `;
+            document.getElementById('uptimeTargetModal').classList.remove('hidden');
+        }
+        function closeUptimeTargetModal() { document.getElementById('uptimeTargetModal').classList.add('hidden'); }
+        function saveUptimeTargets(e) {
+            e.preventDefault();
+            const years = getAvailableYears();
+            years.forEach(y => {
+                const inputElem = document.getElementById('targetYear_' + y);
+                if (inputElem) uptimeLineTargets[y] = parseFloat(inputElem.value);
+            });
+            closeUptimeTargetModal();
+            renderIndividualLineGraph();
+            alert('Uptime target limits updated successfully for all years!');
+        }
+
+        // ▼▼▼ LIVE INDIVIDUAL LINE GRAPH (driven by EJR + manual uptime) ▼▼▼
+        // For the currently selected production line and the year chosen in the card's own
+        // year picker, this function:
+        //   1. Aggregates the "Downtime (min)" column from every matching EJR record into 12
+        //      monthly buckets (rows with blank/non-numeric downtime are ignored).
+        //   2. Distributes the line's manual annual Uptime evenly across 12 months.
+        //   3. Derives monthly Uptime % and Downtime % against the (uptime + downtime) base.
+        //   4. Plots the four metrics the user cares about:
+        //        • Uptime %           (blue line, left axis)
+        //        • Downtime %         (orange line, left axis)
+        //        • Target Uptime %    (green dashed, left axis)
+        //        • MTBF (hrs)         (purple dashed, right hours axis — constant per year)
+        //        • MTTR (hrs)         (red dashed, right hours axis — constant per year)
+        function renderIndividualLineGraph() {
+            const ctx = document.getElementById('individualLineGraph');
+            if (!ctx) return;
+            if (individualLineChartInstance) {
+                individualLineChartInstance.destroy();
+                individualLineChartInstance = null;
+            }
+
+            const deptKey = selectedDept;
+            if (!deptData[deptKey]) return; // safety: only render for a real line
+
+            const year = lineGraphDatasetYear;
+
+            // Map production line key -> EJR department codes that belong to it
+            const LINE_TO_DEPT_CODES = {
+                'DS':   ['DS'],
+                'NVH':  ['NVH'],
+                'Felt': ['FET', 'FELT']
+            };
+            const acceptedCodes = LINE_TO_DEPT_CODES[deptKey] || [deptKey];
+
+            const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+            // 1) Aggregate monthly downtime (minutes) from EJR records for this line + year
+            const monthlyDowntimeMin = new Array(12).fill(0);
+            const monthlyDowntimeCount = new Array(12).fill(0);
+            masterEjrList.forEach(item => {
+                const rawDept = String(item.dept || '').trim().toUpperCase();
+                if (!acceptedCodes.includes(rawDept)) return;
+                if (extractEjrYear(item) !== year) return;
+                const m = extractEjrMonth(item);
+                if (m < 1 || m > 12) return;
+                const dtMin = parseFloat(item.downtime);
+                if (isNaN(dtMin) || dtMin <= 0) return;
+                monthlyDowntimeMin[m - 1] += dtMin;
+                monthlyDowntimeCount[m - 1] += 1;
+            });
+            const monthlyDowntimeHrs = monthlyDowntimeMin.map(m => m / 60);
+
+            // 2) Distribute manual annual uptime evenly across 12 months
+            const annualUptimeHrs = parseFloat(String(deptData[deptKey].uptime || '0').replace(/[^\d.\-]/g, '')) || 0;
+            const monthlyUptimeHrs = annualUptimeHrs / 12;
+
+            // 3) Derive monthly % figures
+            const uptimePct = [];
+            const downtimePct = [];
+            for (let i = 0; i < 12; i++) {
+                const up = monthlyUptimeHrs;
+                const dt = monthlyDowntimeHrs[i];
+                const total = up + dt;
+                if (total > 0) {
+                    uptimePct.push(parseFloat((up / total * 100).toFixed(2)));
+                    downtimePct.push(parseFloat((dt / total * 100).toFixed(2)));
+                } else {
+                    uptimePct.push(100);
+                    downtimePct.push(0);
+                }
+            }
+
+            const targetVal = uptimeLineTargets[year] !== undefined ? uptimeLineTargets[year] : 95.0;
+            const mtbfVal = parseFloat(deptData[deptKey].mtbfVal) || 0;
+            const mttrVal = parseFloat(deptData[deptKey].mttrVal) || 0;
+
+            // Populate the year dropdown inside the card
+            const yrSelElem = document.getElementById('lineGraphYearSelect');
+            if (yrSelElem) {
+                yrSelElem.innerHTML = "";
+                getAvailableYears().forEach(y => {
+                    const opt = document.createElement('option');
+                    opt.value = y; opt.textContent = y;
+                    if (y === year) opt.selected = true;
+                    yrSelElem.appendChild(opt);
+                });
+            }
+
+            // Right-side "hours" axis range: accommodates both MTBF and MTTR comfortably
+            const maxHours = Math.max(60, Math.ceil(Math.max(mtbfVal, mttrVal) * 1.2));
+
+            individualLineChartInstance = new Chart(ctx.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [
+                        {
+                            label: 'Uptime %',
+                            data: uptimePct,
+                            borderColor: '#2563eb',
+                            backgroundColor: '#2563eb',
+                            tension: 0.3,
+                            borderWidth: 2,
+                            pointRadius: 3,
+                            pointHoverRadius: 5,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Downtime %',
+                            data: downtimePct,
+                            borderColor: '#d97706',
+                            backgroundColor: '#d97706',
+                            tension: 0.3,
+                            borderWidth: 2,
+                            pointRadius: 3,
+                            pointHoverRadius: 5,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: `Target Uptime (${targetVal}%)`,
+                            data: Array(12).fill(targetVal),
+                            borderColor: '#059669',
+                            borderDash: [4, 4],
+                            pointRadius: 0,
+                            borderWidth: 1.5,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: `MTBF (${mtbfVal.toFixed(1)} hrs)`,
+                            data: Array(12).fill(mtbfVal),
+                            borderColor: '#7c3aed',
+                            borderDash: [6, 3],
+                            pointRadius: 0,
+                            borderWidth: 1.5,
+                            yAxisID: 'yHours'
+                        },
+                        {
+                            label: `MTTR (${mttrVal.toFixed(1)} hrs)`,
+                            data: Array(12).fill(mttrVal),
+                            borderColor: '#dc2626',
+                            borderDash: [6, 3],
+                            pointRadius: 0,
+                            borderWidth: 1.5,
+                            yAxisID: 'yHours'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            position: 'left',
+                            min: 80,
+                            max: 100,
+                            ticks: { font: { size: 9 } },
+                            title: { display: true, text: 'Percentage (%)', font: { size: 9 }, color: '#475569' }
+                        },
+                        yHours: {
+                            type: 'linear',
+                            position: 'right',
+                            min: 0,
+                            max: maxHours,
+                            grid: { drawOnChartArea: false },
+                            ticks: { font: { size: 9 }, color: '#7c3aed' },
+                            title: { display: true, text: 'Hours', font: { size: 9 }, color: '#7c3aed' }
+                        },
+                        x: { ticks: { font: { size: 9 } } }
+                    },
+                    plugins: {
+                        legend: { position: 'top', labels: { boxWidth: 10, font: { size: 9 }, padding: 6 } },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const ds = context.dataset;
+                                    const i = context.dataIndex;
+                                    if (ds.label.startsWith('Uptime')) {
+                                        return ` Uptime: ${uptimePct[i]}%  (${monthlyUptimeHrs.toFixed(1)} hrs operation)`;
+                                    } else if (ds.label.startsWith('Downtime')) {
+                                        return ` Downtime: ${downtimePct[i]}%  (${monthlyDowntimeHrs[i].toFixed(1)} hrs · ${monthlyDowntimeCount[i]} record${monthlyDowntimeCount[i] === 1 ? '' : 's'})`;
+                                    } else if (ds.label.startsWith('Target')) {
+                                        return ` Target Uptime: ${targetVal}% (${year})`;
+                                    }
+                                    return ` ${ds.label}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        // ▲▲▲ END OF LIVE INDIVIDUAL LINE GRAPH ▲▲▲
+
+        let dashboardMtbfChartInstance = null;
+        let dashboardMttrChartInstance = null;
+        let reliabilityChartInstance = null;
+
+        function initCharts() {
+            updateDashboardCharts();
+            const relCtx = document.getElementById('reliabilityComparisonChart');
+            if (relCtx) {
+                if (reliabilityChartInstance) reliabilityChartInstance.destroy();
+                reliabilityChartInstance = new Chart(relCtx.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+                        datasets: [
+                            { label: 'DS MTBF (hrs)', data: [45, 46, 47, 48, 48.5, 47, 48, 48.5, 49, 48.5, 47, 48.5], borderColor: '#2563eb', tension: 0.3 },
+                            { label: 'NVH MTBF (hrs)', data: [50, 51, 51.5, 52, 53, 51, 52, 52.5, 53, 52, 51.5, 52], borderColor: '#059669', tension: 0.3 },
+                            { label: 'Felt MTBF (hrs)', data: [40, 41, 42, 43, 44, 42, 43, 44, 44.2, 43, 42, 44.2], borderColor: '#d97706', tension: 0.3 }
+                        ]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: false, min: 35 } } }
+                });
+            }
+        }
+
+        function updateDashboardCharts() {
+            const mtbfCtx = document.getElementById('dashboardMtbfChart');
+            const mttrCtx = document.getElementById('dashboardMttrChart');
+            if (!mtbfCtx || !mttrCtx) return;
+            let yrFactor = 1.0;
+            if (selectedDashboardYear === '2025') yrFactor = 0.98;
+            if (selectedDashboardYear === '2024') yrFactor = 0.95;
+            const dsMtbf = (deptData["DS"].mtbfVal * yrFactor).toFixed(1);
+            const nvhMtbf = (deptData["NVH"].mtbfVal * yrFactor).toFixed(1);
+            const feltMtbf = (deptData["Felt"].mtbfVal * yrFactor).toFixed(1);
+            const dsMttr = (deptData["DS"].mttrVal / yrFactor).toFixed(1);
+            const nvhMttr = (deptData["NVH"].mttrVal / yrFactor).toFixed(1);
+            const feltMttr = (deptData["Felt"].mttrVal / yrFactor).toFixed(1);
+            document.getElementById('labelMtbfTargetSummary').textContent = `DS: ${performanceTargets["DS"].mtbf} | NVH: ${performanceTargets["NVH"].mtbf} | Felt: ${performanceTargets["Felt"].mtbf}`;
+            document.getElementById('labelMttrTargetSummary').textContent = `DS: ${performanceTargets["DS"].mttr} | NVH: ${performanceTargets["NVH"].mttr} | Felt: ${performanceTargets["Felt"].mttr}`;
+
+            if (dashboardMtbfChartInstance) dashboardMtbfChartInstance.destroy();
+            dashboardMtbfChartInstance = new Chart(mtbfCtx.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: ['DS', 'NVH', 'Feltline'],
+                    datasets: [
+                        { label: 'Actual MTBF (Hrs)', data: [dsMtbf, nvhMtbf, feltMtbf], backgroundColor: ['#2563eb', '#059669', '#d97706'], borderRadius: 6 },
+                        { label: 'Target MTBF (Hrs)', data: [performanceTargets["DS"].mtbf, performanceTargets["NVH"].mtbf, performanceTargets["Felt"].mtbf], backgroundColor: '#94a3b8', borderRadius: 6 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { font: { size: 9 } } }, x: { ticks: { font: { size: 9 } } } }, plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 9 } } } } }
+            });
+
+            if (dashboardMttrChartInstance) dashboardMttrChartInstance.destroy();
+            dashboardMttrChartInstance = new Chart(mttrCtx.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: ['DS', 'NVH', 'Feltline'],
+                    datasets: [
+                        { label: 'Actual MTTR (Hrs)', data: [dsMttr, nvhMttr, feltMttr], backgroundColor: ['#2563eb', '#059669', '#d97706'], borderRadius: 6 },
+                        { label: 'Target MTTR (Hrs)', data: [performanceTargets["DS"].mttr, performanceTargets["NVH"].mttr, performanceTargets["Felt"].mttr], backgroundColor: '#94a3b8', borderRadius: 6 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { font: { size: 9 } } }, x: { ticks: { font: { size: 9 } } } }, plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 9 } } } } }
+            });
+        }
+
+        function renderEjrTables() {
+            const tbody = document.getElementById('ejrTableBody');
+            if (!tbody) return;
+            tbody.innerHTML = "";
+            populateEjrFilterDropdowns();
+            const filtered = getFilteredEjrList();
+            const total = masterEjrList.length;
+
+            const countLabel = document.getElementById('ejrRegisterCountLabel');
+            if (countLabel) {
+                countLabel.textContent = (filtered.length === total)
+                    ? `— showing all ${total} historical record(s).`
+                    : `— showing ${filtered.length} of ${total} historical record(s) after filtering.`;
+            }
+
+            const summary = document.getElementById('ejrFilterSummary');
+            if (summary) {
+                const active = [];
+                if (ejrFilters.search) active.push(`search "<strong>${ejrFilters.search}</strong>"`);
+                if (ejrFilters.dept !== 'ALL') active.push(`dept <strong>${ejrFilters.dept}</strong>`);
+                if (ejrFilters.status !== 'ALL') active.push(`status <strong>${ejrFilters.status}</strong>`);
+                if (ejrFilters.year !== 'ALL') active.push(`year <strong>${ejrFilters.year}</strong>`);
+                summary.innerHTML = active.length
+                    ? `<i class="fa-solid fa-filter" style="color:#2563eb;"></i> Active: ${active.join(' · ')} &nbsp;|&nbsp; <strong>${filtered.length}</strong> of <strong>${total}</strong> record(s)`
+                    : `<i class="fa-solid fa-list" style="color:#94a3b8;"></i> No filters applied — showing all <strong>${total}</strong> record(s).`;
+            }
+
+            const dtElem = document.getElementById('ejrDowntimeSummary');
+            if (dtElem) {
+                const dt = computeFilteredDowntimeSummary(filtered);
+                const hrs = (min) => (min / 60).toFixed(1);
+                const linePill = (label, color, bg, border, min, count) =>
+                    `<span style="display:inline-flex; align-items:center; gap:0.3rem; padding:0.2rem 0.55rem; border-radius:9999px; font-size:0.72rem; font-weight:600; color:${color}; background:${bg}; border:1px solid ${border};">
+                        ${label}: <strong>${hrs(min)} hrs</strong>
+                        <span style="font-weight:500; color:#64748b; font-size:0.68rem;">(${min} min · ${count})</span>
+                    </span>`;
+                if (dt.contributingRecords === 0) {
+                    dtElem.innerHTML = `
+                        <i class="fa-solid fa-hourglass-half" style="color:#94a3b8;"></i>
+                        <span style="color:#64748b;">Accumulated Downtime (filtered):</span>
+                        <strong style="color:#0f172a;">0.0 hrs</strong>
+                        <span style="color:#94a3b8; font-size:0.7rem;">— no downtime declared in current selection.</span>
+                    `;
+                } else {
+                    dtElem.innerHTML = `
+                        <i class="fa-solid fa-hourglass-half" style="color:#d97706;"></i>
+                        <span style="color:#475569; font-weight:600;">Accumulated Downtime (filtered):</span>
+                        ${linePill('DS',      '#1d4ed8', '#eff6ff', '#bfdbfe', dt.perLineMin.DS,      dt.perLineCount.DS)}
+                        ${linePill('NVH',     '#047857', '#ecfdf5', '#a7f3d0', dt.perLineMin.NVH,     dt.perLineCount.NVH)}
+                        ${linePill('Feltline','#b45309', '#fffbeb', '#fde68a', dt.perLineMin.Felt,    dt.perLineCount.Felt)}
+                        <span style="display:inline-flex; align-items:center; gap:0.3rem; padding:0.2rem 0.65rem; border-radius:9999px; font-size:0.72rem; font-weight:700; color:#0f172a; background:#f1f5f9; border:1px solid #cbd5e1;">
+                            Total: ${hrs(dt.grandMin)} hrs
+                            <span style="font-weight:500; color:#64748b; font-size:0.68rem;">(${dt.grandMin} min across ${dt.contributingRecords} record${dt.contributingRecords === 1 ? '' : 's'})</span>
+                        </span>
+                    `;
+                }
+            }
+
+            const isPrivileged = currentUser && ['Super Administrator', 'Maintenance Manager', 'Plant Engineer'].includes(currentUser.role);
+            const actionsHeader = document.getElementById('ejrActionsHeader');
+            if (actionsHeader) actionsHeader.style.display = currentUser ? 'table-cell' : 'none';
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="15" style="text-align:center; color:#64748b; padding:2rem;">No EJR records match the current filter. <a href="#" onclick="clearEjrFilters(); return false;" style="color:#2563eb; font-weight:600;">Clear filters</a></td></tr>`;
+                return;
+            }
+
+            filtered.forEach((item) => {
+                const realIndex = masterEjrList.indexOf(item);
+                let actionHtml = '';
+                if (currentUser) {
+                    actionHtml = `
+                        <td style="text-align: right; white-space: nowrap;">
+                            <button onclick="openEditEjrModal(${realIndex})" class="btn-primary" title="Edit this EJR entry" style="padding: 0.25rem 0.6rem; font-size: 0.7rem; display: inline-flex; align-items: center; gap: 0.3rem;">
+                                <i class="fa-solid fa-pen"></i> Edit
+                            </button>
+                            ${isPrivileged ? `<button onclick="deleteEjrRecord(${realIndex})" class="btn-danger" title="Delete this EJR entry" style="padding: 0.25rem 0.5rem; font-size: 0.7rem; margin-left: 0.25rem;"><i class="fa-solid fa-trash"></i></button>` : ''}
+                        </td>
+                    `;
+                }
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="white-space: nowrap;">${item.date || ''}</td>
+                        <td><strong>${item.ejrNo || ''}</strong></td>
+                        <td>${item.dept || ''}</td>
+                        <td>${item.machine || ''}</td>
+                        <td style="min-width: 180px;">${item.jobRequest || ''}</td>
+                        <td style="min-width: 220px; white-space: pre-line;">${item.propose || ''}</td>
+                        <td style="white-space: nowrap;">${item.planDate || ''}</td>
+                        <td>${item.pic || ''}</td>
+                        <td style="white-space: nowrap;">${item.jobStart || ''}</td>
+                        <td style="white-space: nowrap;">${item.timeStart || ''}</td>
+                        <td style="white-space: nowrap;">${item.timeFinish || ''}</td>
+                        <td>${item.min || ''}</td>
+                        <td>${item.downtime || ''}</td>
+                        <td style="min-width: 180px; white-space: pre-line;">${item.notes || ''}</td>
+                        ${actionHtml}
+                    </tr>
+                `;
+            });
+        }
+
+        function openAddEjrModal() {
+            document.getElementById('ejrModalTitle').textContent = "Register New EJR";
+            document.getElementById('editEjrIndex').value = -1;
+            document.getElementById('formEjrDate').value = "";
+            document.getElementById('formEjrNo').value = String(Math.floor(Math.random() * 9000) + 1000);
+            document.getElementById('formEjrDept').value = "DS";
+            document.getElementById('formEjrMachine').value = "";
+            document.getElementById('formEjrJobRequest').value = "";
+            document.getElementById('formEjrPropose').value = "";
+            document.getElementById('formEjrPlanDate').value = "";
+            document.getElementById('formEjrPic').value = "";
+            document.getElementById('formEjrJobStart').value = "";
+            document.getElementById('formEjrTimeStart').value = "";
+            document.getElementById('formEjrTimeFinish').value = "";
+            document.getElementById('formEjrMin').value = "";
+            document.getElementById('formEjrDowntime').value = "";
+            document.getElementById('formEjrNotes').value = "";
+            document.getElementById('ejrModal').classList.remove('hidden');
+        }
+
+        function openEditEjrModal(index) {
+            const item = masterEjrList[index];
+            if (!item) return;
+            document.getElementById('ejrModalTitle').textContent = "Edit EJR Record";
+            document.getElementById('editEjrIndex').value = index;
+            document.getElementById('formEjrDate').value = item.date || '';
+            document.getElementById('formEjrNo').value = item.ejrNo || '';
+            document.getElementById('formEjrDept').value = item.dept || 'DS';
+            document.getElementById('formEjrMachine').value = item.machine || '';
+            document.getElementById('formEjrJobRequest').value = item.jobRequest || '';
+            document.getElementById('formEjrPropose').value = item.propose || '';
+            document.getElementById('formEjrPlanDate').value = item.planDate || '';
+            document.getElementById('formEjrPic').value = item.pic || '';
+            document.getElementById('formEjrJobStart').value = item.jobStart || '';
+            document.getElementById('formEjrTimeStart').value = item.timeStart || '';
+            document.getElementById('formEjrTimeFinish').value = item.timeFinish || '';
+            document.getElementById('formEjrMin').value = item.min || '';
+            document.getElementById('formEjrDowntime').value = item.downtime || '';
+            document.getElementById('formEjrNotes').value = item.notes || '';
+            document.getElementById('ejrModal').classList.remove('hidden');
+        }
+        function closeEjrModal() { document.getElementById('ejrModal').classList.add('hidden'); }
+
+        function saveEjrRecord(e) {
+            e.preventDefault();
+            const idx = parseInt(document.getElementById('editEjrIndex').value);
+            const notesVal = document.getElementById('formEjrNotes').value.trim();
+            const newItem = {
+                date: document.getElementById('formEjrDate').value.trim(),
+                ejrNo: document.getElementById('formEjrNo').value.trim(),
+                dept: document.getElementById('formEjrDept').value,
+                machine: document.getElementById('formEjrMachine').value.trim(),
+                jobRequest: document.getElementById('formEjrJobRequest').value.trim(),
+                propose: document.getElementById('formEjrPropose').value.trim(),
+                planDate: document.getElementById('formEjrPlanDate').value.trim(),
+                pic: document.getElementById('formEjrPic').value.trim(),
+                jobStart: document.getElementById('formEjrJobStart').value.trim(),
+                timeStart: document.getElementById('formEjrTimeStart').value.trim(),
+                timeFinish: document.getElementById('formEjrTimeFinish').value.trim(),
+                min: document.getElementById('formEjrMin').value.trim(),
+                downtime: document.getElementById('formEjrDowntime').value.trim(),
+                notes: notesVal,
+                status: inferEjrStatus(notesVal)
+            };
+            if (idx === -1) masterEjrList.unshift(newItem);
+            else masterEjrList[idx] = newItem;
+            closeEjrModal();
+            recomputeDeptStatsFromEjr();
+            populateEjrFilterDropdowns();
+            renderEjrTables();
+            renderDashboard();
+            refreshDynamicYearSelectors();
+            alert('EJR record successfully saved and synchronized!');
+        }
+
+        function deleteEjrRecord(index) {
+            if (confirm('Are you sure you want to delete this EJR record?')) {
+                masterEjrList.splice(index, 1);
+                recomputeDeptStatsFromEjr();
+                populateEjrFilterDropdowns();
+                renderEjrTables();
+                renderDashboard();
+            }
+        }
+
+        const EJR_HEADER_ALIASES = {
+            date: ['date'], ejrNo: ['ejrno', 'ejrnumber', 'requestid', 'ejr'], dept: ['department', 'dept'],
+            machine: ['machinearea', 'machine'], jobRequest: ['jobrequest'],
+            propose: ['proposeactiontaken', 'proposeactiontake', 'proposeaction', 'actiontaken'],
+            planDate: ['planjobdate', 'plandate'], pic: ['personincharge', 'pic'],
+            jobStart: ['jobdatestart', 'jobstartdate'], timeStart: ['timestart'], timeFinish: ['timefinish'],
+            min: ['min', 'minutes', 'mins'], downtime: ['downtimemin', 'downtime'], notes: ['notes', 'remark', 'remarks']
+        };
+
+        function normEjrHeader(s) { return String(s == null ? '' : s).toLowerCase().replace(/[^a-z0-9]/g, ''); }
+
+        function findEjrHeaderRow(rows) {
+            const limit = Math.min(rows.length, 40);
+            for (let r = 0; r < limit; r++) {
+                const normed = (rows[r] || []).map(normEjrHeader);
+                const hasDate = normed.includes('date');
+                const hasEjrNo = normed.some(h => h === 'ejrno' || h === 'ejrnumber' || h === 'ejr');
+                if (hasDate && hasEjrNo) return r;
+            }
+            return -1;
+        }
+
+        function mapEjrColumns(headerRow) {
+            const colMap = {};
+            (headerRow || []).forEach((cell, idx) => {
+                const n = normEjrHeader(cell);
+                if (!n) return;
+                for (const key in EJR_HEADER_ALIASES) {
+                    if (colMap[key] !== undefined) continue;
+                    if (EJR_HEADER_ALIASES[key].includes(n)) colMap[key] = idx;
+                }
+            });
+            return colMap;
+        }
+
+        function parseEjrWorkbookToRecords(workbook) {
+            let foundRows = null, headerIdx = -1, colMap = null;
+            for (const sheetName of workbook.SheetNames) {
+                const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1, raw: false, defval: '' });
+                const hIdx = findEjrHeaderRow(rows);
+                if (hIdx === -1) continue;
+                const cMap = mapEjrColumns(rows[hIdx]);
+                if (cMap.date !== undefined && cMap.ejrNo !== undefined) {
+                    foundRows = rows; headerIdx = hIdx; colMap = cMap; break;
+                }
+            }
+            if (!foundRows) return { records: null, errorCode: 'header-not-found' };
+            const get = (row, key) => {
+                const idx = colMap[key];
+                return idx !== undefined ? String(row[idx] == null ? '' : row[idx]).trim() : '';
+            };
+            const newRecords = [];
+            for (let r = headerIdx + 1; r < foundRows.length; r++) {
+                const row = foundRows[r] || [];
+                const dateVal = get(row, 'date');
+                const ejrNoVal = get(row, 'ejrNo');
+                if (!dateVal && !ejrNoVal) continue;
+                const notesVal = get(row, 'notes');
+                newRecords.push({
+                    date: dateVal, ejrNo: ejrNoVal,
+                    dept: get(row, 'dept'), machine: get(row, 'machine'),
+                    jobRequest: get(row, 'jobRequest'), propose: get(row, 'propose'),
+                    planDate: get(row, 'planDate'), pic: get(row, 'pic'),
+                    jobStart: get(row, 'jobStart'), timeStart: get(row, 'timeStart'),
+                    timeFinish: get(row, 'timeFinish'), min: get(row, 'min'),
+                    downtime: get(row, 'downtime'), notes: notesVal,
+                    status: inferEjrStatus(notesVal)
+                });
+            }
+            if (newRecords.length === 0) return { records: null, errorCode: 'no-data-rows' };
+            return { records: newRecords, errorCode: null };
+        }
+
+        function ejrImportErrorMessage(errorCode) {
+            if (errorCode === 'header-not-found') return 'Could not find a recognizable EJR header row in this file (expecting columns like "Date", "EJR No", "Department", "Job Request"...). Please check the sheet and try again.';
+            return 'Header row was found, but no data rows beneath it could be read.';
+        }
+
+        function applyImportedEjrRecords(records, sourceLabel) {
+            masterEjrList = records;
+            recomputeDeptStatsFromEjr();
+            populateEjrFilterDropdowns();
+            renderEjrTables();
+            renderDashboard();
+            refreshDynamicYearSelectors();
+            alert(`Successfully imported ${records.length} EJR record(s) from "${sourceLabel}". The EJR Master Register now shows the full historical dataset, and department repair-time (MTTR) figures have been recalculated from it.`);
+        }
+
+        function loadEJRExcel(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const data = new Uint8Array(evt.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const { records, errorCode } = parseEjrWorkbookToRecords(workbook);
+                    if (errorCode) { alert(ejrImportErrorMessage(errorCode)); return; }
+                    applyImportedEjrRecords(records, file.name);
+                } catch (err) {
+                    console.error(err);
+                    alert('Error parsing uploaded Excel file. Please check the file format and try again.');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function changePmYear(year) {
+            selectedPmYear = year;
+            renderYearOverview();
+            checkUpcomingPmNotifications();
+        }
+
+        function renderYearOverview() {
+            document.getElementById('displaySelectedYearLabel').textContent = selectedPmYear;
+            const container = document.getElementById('yearOverviewContainer');
+            container.innerHTML = "";
+            const yearPms = masterPmList.filter(p => p.year === selectedPmYear);
+            document.getElementById('totalPmStat').textContent = yearPms.length;
+            document.getElementById('pendingPmStat').textContent = yearPms.filter(p => p.status === 'Pending').length;
+            const doneCount = yearPms.filter(p => p.status === 'Done').length;
+            const compRate = yearPms.length > 0 ? ((doneCount / yearPms.length) * 100).toFixed(1) : '100.0';
+            document.getElementById('liveComplianceStat').textContent = compRate + '%';
+            const months = [
+                { name: "January", num: "01" }, { name: "February", num: "02" }, { name: "March", num: "03" }, { name: "April", num: "04" },
+                { name: "May", num: "05" }, { name: "June", num: "06" }, { name: "July", num: "07" }, { name: "August", num: "08" },
+                { name: "September", num: "09" }, { name: "October", num: "10" }, { name: "November", num: "11" }, { name: "December", num: "12" }
+            ];
+            months.forEach(m => {
+                const mPms = yearPms.filter(p => {
+                    const dStr = p.status === 'Postponed' && p.postponedDate ? p.postponedDate : p.date;
+                    return dStr && dStr.substring(5, 7) === m.num;
+                });
+                const card = document.createElement('div');
+                card.style.background = '#f8fafc';
+                card.style.border = '1px solid #e2e8f0';
+                card.style.padding = '1rem';
+                card.style.borderRadius = '8px';
+                card.style.cursor = 'pointer';
+                card.onclick = () => openMonthDetail(m.name, m.num);
+                let statusBadge = `<span class="badge badge-emerald">Complete</span>`;
+                if (mPms.some(p => p.status === 'Pending')) statusBadge = `<span class="badge badge-amber">Pending Items</span>`;
+                card.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <strong style="color: #0f172a; font-size: 0.875rem;">${m.name}</strong>
+                        ${statusBadge}
+                    </div>
+                    <p style="font-size: 0.75rem; color: #64748b;">Scheduled PMs: <strong>${mPms.length}</strong></p>
+                    <span style="font-size: 10px; color: #2563eb; font-weight: 600; display: block; margin-top: 0.5rem;"><i class="fa-solid fa-eye"></i> Click to view details</span>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function openMonthDetail(monthName, monthNum) {
+            currentMonthView = monthNum;
+            document.getElementById('monthDetailTitle').textContent = `Detailed Preventive Maintenance Schedule - ${monthName} ${selectedPmYear}`;
+            document.getElementById('monthDetailCard').classList.remove('hidden');
+            const tbody = document.getElementById('monthDetailTableBody');
+            tbody.innerHTML = "";
+            const yearPms = masterPmList.filter(p => p.year === selectedPmYear);
+            const mPms = yearPms.filter(p => {
+                const dStr = p.status === 'Postponed' && p.postponedDate ? p.postponedDate : p.date;
+                return dStr && dStr.substring(5, 7) === monthNum;
+            });
+            const isPrivileged = currentUser && ['Super Administrator', 'Maintenance Manager', 'Plant Engineer'].includes(currentUser.role);
+            if (mPms.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #64748b; padding: 1.5rem;">No preventive maintenance tasks scheduled for ${monthName} ${selectedPmYear}.</td></tr>`;
+                return;
+            }
+            mPms.forEach((pm) => {
+                let badgeClass = 'badge-emerald';
+                if (pm.status === 'Pending') badgeClass = 'badge-amber';
+                else if (pm.status === 'Postponed') badgeClass = 'badge-blue';
+                let actionHtml = '';
+                if (isPrivileged) {
+                    const globalIdx = masterPmList.findIndex(item => item.id === pm.id);
+                    actionHtml = `<td style="text-align: right;">
+                        <button onclick="openEditPmModal(${globalIdx})" class="btn-primary" style="padding: 0.25rem 0.5rem; font-size: 0.7rem;"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="deletePmRecord(${globalIdx})" class="btn-danger" style="padding: 0.25rem 0.5rem; font-size: 0.7rem;"><i class="fa-solid fa-trash"></i></button>
+                    </td>`;
+                }
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${pm.date}</td><td>${pm.dept}</td><td><strong>${pm.machine}</strong></td>
+                        <td>${pm.desc}</td>
+                        <td><span class="badge ${badgeClass}">${pm.status}</span> ${pm.status === 'Postponed' && pm.postponedDate ? `(To: ${pm.postponedDate})` : ''}</td>
+                        ${isPrivileged ? actionHtml : ''}
+                    </tr>
+                `;
+            });
+        }
+        function closeMonthDetail() { document.getElementById('monthDetailCard').classList.add('hidden'); }
+
+        function openAddPmModal() {
+            document.getElementById('pmModalTitle').textContent = "Register Preventive Maintenance";
+            document.getElementById('editPmIndex').value = -1;
+            document.getElementById('formPmMachine').value = "";
+            document.getElementById('formPmDate').value = `${selectedPmYear}-09-25`;
+            document.getElementById('formPmDesc').value = "";
+            document.getElementById('formPmStatus').value = "Pending";
+            document.getElementById('postponedDateWrapper').classList.add('hidden');
+            document.getElementById('pmModal').classList.remove('hidden');
+        }
+
+        function openEditPmModal(index) {
+            const pm = masterPmList[index];
+            if (!pm) return;
+            document.getElementById('pmModalTitle').textContent = "Edit PM Schedule Record";
+            document.getElementById('editPmIndex').value = index;
+            document.getElementById('formPmDept').value = pm.dept;
+            document.getElementById('formPmMachine').value = pm.machine;
+            document.getElementById('formPmDate').value = pm.date;
+            document.getElementById('formPmDesc').value = pm.desc;
+            document.getElementById('formPmStatus').value = pm.status;
+            if (pm.status === 'Postponed') {
+                document.getElementById('postponedDateWrapper').classList.remove('hidden');
+                document.getElementById('formPmPostponedDate').value = pm.postponedDate || "";
+            } else document.getElementById('postponedDateWrapper').classList.add('hidden');
+            document.getElementById('pmModal').classList.remove('hidden');
+        }
+        function closePmModal() { document.getElementById('pmModal').classList.add('hidden'); }
+        function togglePostponeField() {
+            const stat = document.getElementById('formPmStatus').value;
+            const wrap = document.getElementById('postponedDateWrapper');
+            if (stat === 'Postponed') wrap.classList.remove('hidden');
+            else wrap.classList.add('hidden');
+        }
+
+        async function savePmRecord(e) {
+            e.preventDefault();
+            const idx = parseInt(document.getElementById('editPmIndex').value);
+            const dateVal = document.getElementById('formPmDate').value;
+            const yr = dateVal ? dateVal.substring(0, 4) : selectedPmYear;
+            const isNew = idx === -1;
+            const newPm = {
+                id: !isNew ? masterPmList[idx].id : Date.now(),
+                year: yr,
+                dept: document.getElementById('formPmDept').value,
+                machine: document.getElementById('formPmMachine').value.trim(),
+                date: dateVal,
+                desc: document.getElementById('formPmDesc').value.trim(),
+                status: document.getElementById('formPmStatus').value,
+                postponedDate: document.getElementById('formPmStatus').value === 'Postponed' ? document.getElementById('formPmPostponedDate').value : ""
+            };
+            await addOrUpdatePmOnServer(newPm, isNew);
+            closePmModal();
+            renderYearOverview();
+            if (currentMonthView) {
+                const mName = ["January","February","March","April","May","June","July","August","September","October","November","December"][parseInt(currentMonthView)-1];
+                openMonthDetail(mName, currentMonthView);
+            }
+            refreshDynamicYearSelectors();
+            checkUpcomingPmNotifications();
+            alert('PM schedule record successfully saved!');
+        }
+
+        function exportPmCsv() {
+            const rows = masterPmList.filter(p => p.year === selectedPmYear);
+            const esc = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+            let csv = "Date,Dept,Machine,Description,Status,Postponed To\n";
+            rows.forEach(p => {
+                csv += [p.date, p.dept, p.machine, p.desc, p.status, p.postponedDate].map(esc).join(",") + "\n";
+            });
+            const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `PM_Schedule_${selectedPmYear}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        async function deletePmRecord(index) {
+            if (confirm('Are you sure you want to delete this PM schedule?')) {
+                const idToDelete = masterPmList[index].id;
+                await deletePmOnServer(idToDelete);
+                renderYearOverview();
+                if (currentMonthView) {
+                    const mName = ["January","February","March","April","May","June","July","August","September","October","November","December"][parseInt(currentMonthView)-1];
+                    openMonthDetail(mName, currentMonthView);
+                }
+            }
+        }
+
+        function previewReport(type) {
+            currentReportType = type;
+            document.getElementById('previewTypeLabel').textContent = type === 'Reliability' ? 'Reliability & MTBF' : type === 'PM' ? 'PM Master Schedule' : 'Master EJR & Downtime';
+            updateReportPreview();
+        }
+
+        function updateReportPreview() {
+            const yr = document.getElementById('reportYearSelect').value || selectedDashboardYear;
+            document.getElementById('previewYearLabel').textContent = yr;
+            const container = document.getElementById('reportPreviewContainer');
+            if (currentReportType === 'Reliability') {
+                container.innerHTML = `
+                    <div style="border-bottom: 2px solid #0f172a; padding-bottom: 1rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div>
+                            <h2 style="font-size: 1rem; font-weight: bold; color: #0f172a;">HIROTAKO ACOUSTICS SDN. BHD.</h2>
+                            <p style="font-size: 10px; color: #64748b;">Plant Engineering Operation Management | Reliability Audit Report (${yr})</p>
+                        </div>
+                        <div style="text-align: right; font-size: 10px; color: #64748b;">
+                            <p>Generated: 2026-09-18</p>
+                            <p>Status: <strong style="color: #059669;">Verified & Approved</strong></p>
+                        </div>
+                    </div>
+                    <h3 style="font-size: 0.875rem; font-weight: bold; margin-bottom: 0.75rem; color: #1e293b;">Executive Summary - Annual MTBF & MTTR Performance</h3>
+                    <table style="margin-bottom: 1rem;">
+                        <thead><tr><th>Production Line</th><th>Actual MTBF</th><th>Target MTBF</th><th>Actual MTTR</th><th>Target MTTR</th><th>Status</th></tr></thead>
+                        <tbody>
+                            <tr><td>Dampening Sheet (DS)</td><td>48.5 hrs</td><td>${performanceTargets["DS"].mtbf} hrs</td><td>1.8 hrs</td><td>${performanceTargets["DS"].mttr} hrs</td><td><span class="badge badge-emerald">Optimal</span></td></tr>
+                            <tr><td>Insulator (NVH)</td><td>52.0 hrs</td><td>${performanceTargets["NVH"].mtbf} hrs</td><td>1.2 hrs</td><td>${performanceTargets["NVH"].mttr} hrs</td><td><span class="badge badge-emerald">Optimal</span></td></tr>
+                            <tr><td>Feltline (Felt)</td><td>44.2 hrs</td><td>${performanceTargets["Felt"].mtbf} hrs</td><td>2.1 hrs</td><td>${performanceTargets["Felt"].mttr} hrs</td><td><span class="badge badge-amber">Monitored</span></td></tr>
+                        </tbody>
+                    </table>
+                    <p style="font-size: 0.75px; color: #475569; font-style: italic;">Note: All figures comply with internal Hirotako Engineering ISO standards for year ${yr}.</p>
+                `;
+            } else if (currentReportType === 'PM') {
+                container.innerHTML = `
+                    <div style="border-bottom: 2px solid #0f172a; padding-bottom: 1rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div>
+                            <h2 style="font-size: 1rem; font-weight: bold; color: #0f172a;">HIROTAKO ACOUSTICS SDN. BHD.</h2>
+                            <p style="font-size: 10px; color: #64748b;">Preventative Maintenance Compliance Audit (${yr})</p>
+                        </div>
+                        <div style="text-align: right; font-size: 10px; color: #64748b;">
+                            <p>Generated: 2026-09-18</p>
+                            <p>Compliance Rate: <strong style="color: #059669;">96.5%</strong></p>
+                        </div>
+                    </div>
+                    <h3 style="font-size: 0.875rem; font-weight: bold; margin-bottom: 0.75rem; color: #1e293b;">Scheduled PM Register Summary (${yr})</h3>
+                    <table>
+                        <thead><tr><th>Date</th><th>Dept</th><th>Machine Name</th><th>Description</th><th>Status</th></tr></thead>
+                        <tbody>
+                            <tr><td>${yr}-03-15</td><td>DS</td><td>Hydraulic Press #1</td><td>Annual hydraulic fluid flush</td><td><span class="badge badge-emerald">Done</span></td></tr>
+                            <tr><td>${yr}-06-10</td><td>NVH</td><td>Conveyor Belt Alpha</td><td>Roller bearing replacement</td><td><span class="badge badge-emerald">Done</span></td></tr>
+                            <tr><td>${yr}-11-20</td><td>Felt</td><td>Feltline Main Dryer</td><td>Burner nozzle decarbonization</td><td><span class="badge badge-emerald">Done</span></td></tr>
+                        </tbody>
+                    </table>
+                `;
+            } else {
+                container.innerHTML = `
+                    <div style="border-bottom: 2px solid #0f172a; padding-bottom: 1rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div>
+                            <h2 style="font-size: 1rem; font-weight: bold; color: #0f172a;">HIROTAKO ACOUSTICS SDN. BHD.</h2>
+                            <p style="font-size: 10px; color: #64748b;">Master EJR & Downtime Logs Export (${yr})</p>
+                        </div>
+                        <div style="text-align: right; font-size: 10px; color: #64748b;">
+                            <p>Generated: 2026-09-18</p>
+                            <p>Total Records: <strong style="color: #2563eb;">${masterEjrList.length}</strong></p>
+                        </div>
+                    </div>
+                    <h3 style="font-size: 0.875rem; font-weight: bold; margin-bottom: 0.75rem; color: #1e293b;">Equipment Job Request Log Extracts</h3>
+                    <table>
+                        <thead><tr><th>Date</th><th>EJR No</th><th>Dept</th><th>Job Request</th><th>PIC</th><th>Min</th><th>Status</th></tr></thead>
+                        <tbody>${masterEjrList.map(i => `<tr><td>${i.date || ''}</td><td><strong>${i.ejrNo || ''}</strong></td><td>${i.dept || ''}</td><td>${i.jobRequest || ''}</td><td>${i.pic || ''}</td><td>${i.min || ''}</td><td>${i.status || 'Open'}</td></tr>`).join('')}</tbody>
+                    </table>
+                `;
+            }
+        }
+
+        function downloadReport(type) { alert(`Downloading official Hirotako ${type} Report for year ${document.getElementById('reportYearSelect').value || '2026'}...`); }
+        function downloadCurrentPreview() { alert(`Direct download initiated for ${currentReportType} report document.`); }
+
+        function renderAdminUserTable() {
+            const tbody = document.getElementById('adminUserTableBody');
+            if (!tbody) return;
+            tbody.innerHTML = "";
+            document.getElementById('userCountBadge').textContent = systemUsers.length;
+            systemUsers.forEach((u, index) => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td><strong>${u.username}</strong></td>
+                        <td><code>${u.password}</code></td>
+                        <td>${u.name} &mdash; <span class="badge badge-blue">${u.role}</span></td>
+                        <td style="text-align: right;">
+                            <button onclick="openEditUserModal(${index})" class="btn-primary" style="padding: 0.25rem 0.5rem; font-size: 0.7rem;"><i class="fa-solid fa-pen"></i></button>
+                            ${u.username.toLowerCase() !== 'admin' ? `<button onclick="deleteUserRecord(${index})" class="btn-danger" style="padding: 0.25rem 0.5rem; font-size: 0.7rem;"><i class="fa-solid fa-trash"></i></button>` : ''}
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function openAddUserModal() {
+            document.getElementById('userModalTitle').textContent = "Add System User";
+            document.getElementById('editUserIndex').value = -1;
+            document.getElementById('formUserUsername').value = "";
+            document.getElementById('formUserPassword').value = "";
+            document.getElementById('formUserName').value = "";
+            document.getElementById('userModal').classList.remove('hidden');
+        }
+
+        function openEditUserModal(index) {
+            const u = systemUsers[index];
+            if (!u) return;
+            document.getElementById('userModalTitle').textContent = "Edit System User";
+            document.getElementById('editUserIndex').value = index;
+            document.getElementById('formUserUsername').value = u.username;
+            document.getElementById('formUserPassword').value = u.password;
+            document.getElementById('formUserName').value = u.name;
+            document.getElementById('formUserRole').value = u.role;
+            document.getElementById('userModal').classList.remove('hidden');
+        }
+        function closeUserModal() { document.getElementById('userModal').classList.add('hidden'); }
+
+        function saveUserRecord(e) {
+            e.preventDefault();
+            const idx = parseInt(document.getElementById('editUserIndex').value);
+            const newUser = {
+                username: document.getElementById('formUserUsername').value.trim(),
+                password: document.getElementById('formUserPassword').value.trim(),
+                name: document.getElementById('formUserName').value.trim(),
+                role: document.getElementById('formUserRole').value
+            };
+            if (idx === -1) systemUsers.push(newUser);
+            else systemUsers[idx] = newUser;
+            closeUserModal();
+            renderAdminUserTable();
+            alert('System user record successfully saved!');
+        }
+
+        function deleteUserRecord(index) {
+            if (confirm('Are you sure you want to delete this user account?')) {
+                systemUsers.splice(index, 1);
+                renderAdminUserTable();
+            }
+        }
+    </script>
+</body>
+</html>
