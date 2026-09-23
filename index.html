@@ -219,6 +219,32 @@
                         </div>
                     </div>
 
+                    <div class="card">
+                        <h3 style="font-size: 0.875rem; font-weight: bold; color: #1e293b; margin-bottom: 1rem;"><i class="fa-solid fa-hourglass-half" style="color: #d97706; margin-right: 0.5rem;"></i> Accumulated Downtime by Department <span id="ejrDowntimeSummaryScopeLabel" style="font-weight: 500; color: #64748b; font-size: 0.75rem;">(all records)</span></h3>
+                        <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem;">
+                            <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 1rem; border-radius: 8px;">
+                                <span style="font-size: 0.75rem; color: #1d4ed8; font-weight: 600;">DS (Dampening Sheet)</span>
+                                <span id="deptDowntimeStat_DS" style="font-size: 1.25rem; font-weight: bold; color: #1d4ed8; margin-top: 0.25rem; display: block;">0.0 hrs</span>
+                                <span id="deptDowntimeCount_DS" style="font-size: 0.7rem; color: #64748b;">0 records</span>
+                            </div>
+                            <div style="background: #ecfdf5; border: 1px solid #a7f3d0; padding: 1rem; border-radius: 8px;">
+                                <span style="font-size: 0.75rem; color: #047857; font-weight: 600;">NVH (Insulator)</span>
+                                <span id="deptDowntimeStat_NVH" style="font-size: 1.25rem; font-weight: bold; color: #047857; margin-top: 0.25rem; display: block;">0.0 hrs</span>
+                                <span id="deptDowntimeCount_NVH" style="font-size: 0.7rem; color: #64748b;">0 records</span>
+                            </div>
+                            <div style="background: #fffbeb; border: 1px solid #fde68a; padding: 1rem; border-radius: 8px;">
+                                <span style="font-size: 0.75rem; color: #b45309; font-weight: 600;">Feltline</span>
+                                <span id="deptDowntimeStat_Felt" style="font-size: 1.25rem; font-weight: bold; color: #b45309; margin-top: 0.25rem; display: block;">0.0 hrs</span>
+                                <span id="deptDowntimeCount_Felt" style="font-size: 0.7rem; color: #64748b;">0 records</span>
+                            </div>
+                            <div style="background: #f1f5f9; border: 1px solid #cbd5e1; padding: 1rem; border-radius: 8px;">
+                                <span style="font-size: 0.75rem; color: #334155; font-weight: 600;">Total (All Lines)</span>
+                                <span id="deptDowntimeStat_Total" style="font-size: 1.25rem; font-weight: bold; color: #0f172a; margin-top: 0.25rem; display: block;">0.0 hrs</span>
+                                <span id="deptDowntimeCount_Total" style="font-size: 0.7rem; color: #64748b;">0 records</span>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="card" style="padding: 1rem 1.25rem;">
                         <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: flex-end;">
                             <div style="flex: 2 1 240px; min-width: 200px;">
@@ -1691,6 +1717,25 @@
                         </span>
                     `;
                 }
+            }
+
+            // Populate the dedicated department downtime summary cards
+            const dt2 = computeFilteredDowntimeSummary(filtered);
+            const hrs2 = (min) => (min / 60).toFixed(1);
+            const setStat = (deptKey, min, count) => {
+                const statEl = document.getElementById('deptDowntimeStat_' + deptKey);
+                const countEl = document.getElementById('deptDowntimeCount_' + deptKey);
+                if (statEl) statEl.textContent = hrs2(min) + ' hrs';
+                if (countEl) countEl.textContent = count + ' record' + (count === 1 ? '' : 's');
+            };
+            setStat('DS', dt2.perLineMin.DS, dt2.perLineCount.DS);
+            setStat('NVH', dt2.perLineMin.NVH, dt2.perLineCount.NVH);
+            setStat('Felt', dt2.perLineMin.Felt, dt2.perLineCount.Felt);
+            setStat('Total', dt2.grandMin, dt2.contributingRecords);
+            const scopeLabel = document.getElementById('ejrDowntimeSummaryScopeLabel');
+            if (scopeLabel) {
+                const hasFilters = ejrFilters.search || ejrFilters.dept !== 'ALL' || ejrFilters.status !== 'ALL' || ejrFilters.year !== 'ALL';
+                scopeLabel.textContent = hasFilters ? '(current filter selection)' : '(all records)';
             }
 
             const isPrivileged = currentUser && ['Super Administrator', 'Maintenance Manager', 'Plant Engineer'].includes(currentUser.role);
