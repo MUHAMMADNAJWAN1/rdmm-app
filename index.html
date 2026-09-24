@@ -407,14 +407,36 @@
                     <div class="card">
                         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.75rem;">
                             <div>
-                                <h3 style="font-size: 0.875rem; font-weight: bold; color: #1e293b;"><i class="fa-solid fa-clock-rotate-left" style="color: #2563eb; margin-right: 0.5rem;"></i> Machine History & Lifetime Maintenance Log</h3>
-                                <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">Click a machine below to view its complete combined history. The list respects the DS / NVH / Feltline filter in the top header.</p>
+                                <h3 style="font-size: 0.875rem; font-weight: bold; color: #1e293b;">
+                                    <i class="fa-solid fa-clock-rotate-left" style="color: #2563eb; margin-right: 0.5rem;"></i>
+                                    Machine History & Lifetime Maintenance Log
+                                </h3>
+                                <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">
+                                    Department: <strong id="mhDeptLabel" style="color:#2563eb;">ALL LINES</strong> &mdash;
+                                    pick a machine from the dropdown below to view its complete combined history.
+                                </p>
                             </div>
                         </div>
-                        <div id="machineHistoryChipsContainer" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.25rem;"></div>
-                        <div id="machineHistoryEmptyState" style="text-align: center; padding: 2.5rem 1rem; color: #94a3b8;">
+
+                        <div style="display: grid; grid-template-columns: 260px 1fr; gap: 1rem; align-items: end;">
+                            <div>
+                                <label style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: #475569; letter-spacing: 0.05em; display: block; margin-bottom: 0.35rem;">
+                                    <i class="fa-solid fa-industry" style="color:#2563eb; margin-right: 0.3rem;"></i> Department
+                                </label>
+                                <input type="text" id="mhDeptDisplayInput" value="ALL LINES" readonly
+                                       style="background:#f1f5f9; font-weight:600; color:#2563eb; cursor:not-allowed;">
+                            </div>
+                            <div>
+                                <label for="machineHistorySelect" style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: #475569; letter-spacing: 0.05em; display: block; margin-bottom: 0.35rem;">
+                                    <i class="fa-solid fa-gear" style="color:#2563eb; margin-right: 0.3rem;"></i> Machine
+                                </label>
+                                <select id="machineHistorySelect" onchange="selectMachineHistory(this.value)"></select>
+                            </div>
+                        </div>
+
+                        <div id="machineHistoryEmptyState" class="hidden" style="text-align: center; padding: 2.5rem 1rem; color: #94a3b8;">
                             <i class="fa-solid fa-gears" style="font-size: 1.75rem; margin-bottom: 0.5rem; display: block;"></i>
-                            No machines found for this line yet. Register an EJR or PM record first, then its machine name will appear here.
+                            No machines found for this department.
                         </div>
                     </div>
 
@@ -656,7 +678,10 @@
                 <div><label>Department Code</label>
                     <select id="formPmDept"><option value="DS">DS</option><option value="NVH">NVH</option><option value="Felt">Felt</option></select>
                 </div>
-                <div><label>Machine Name</label><input type="text" id="formPmMachine" required placeholder="e.g. Press Machine #3"></div>
+                <div><label>Machine Name</label>
+                    <select id="formPmMachineSelect" onchange="onPmMachineChange()"></select>
+                    <input type="text" id="formPmMachine" placeholder="Or type a new machine name" style="margin-top:0.4rem;">
+                </div>
                 <div><label>Scheduled Date</label><input type="date" id="formPmDate" required></div>
                 <div><label>PM Description</label><input type="text" id="formPmDesc" required placeholder="e.g. Lubrication & Bearing Check"></div>
                 <div><label>Execution Status</label>
@@ -736,6 +761,80 @@
     </div>
 
     <script>
+        // ===== MASTER MACHINE LIST PER DEPARTMENT =====
+        const MASTER_MACHINES = {
+            "NVH": [
+                "150T Hydraulic Press", "250T Hydraulic Press", "600TA Hydraulic Press",
+                "600TB Hydraulic Press", "300T Hydraulic Press", "400T Hydraulic Press",
+                "50T Die Cut Hydraulic Press", "100T Die Cut Hydraulic Press",
+                "Hot Plate No.1 (Hydraulic Press)", "Hot Plate No.2 (Pneumatic Press)",
+                "Hot Plate No.3 (Pneumatic Press)", "Electric Hot Plate",
+                "Hot Melt Glue No.1", "Hot Melt Glue No.2",
+                "Auto Hot Melt Glue No.1", "Auto Hot Melt Glue No.2",
+                "Laminate Oven", "Mini Oven",
+                "Hot Air Oven No.1 (Burner)", "Hot Air Oven No.2 (Burner)",
+                "Portable Oil Heater No.1", "Portable Oil Heater No.2",
+                "Hydraulic Press Scrap Machine", "Mould Turning Device",
+                "Cooling Tower No.1", "Cooling Tower No.2", "Cooling Tower No.3",
+                "Water Chiller No.1", "Water Chiller No.2", "Water Chiller No.3 (Amcon)",
+                "Screw Compressor (SULLAIR) WS 3708 AC",
+                "Air Compressor - KOBELCO 30H/P Model: SG22A-H",
+                "Air Dryer Main Line Model: CKD GX 137-H-AC200V",
+                "Thermo Oil Burner 400,000 kcal 24 kW",
+                "Thermo Oil Strainer", "Thermo Oil Pump",
+                "PU Machine", "Pneumatic Jig",
+                "NVH Felt Recycling Crusher", "Water Jet Cutting Robot",
+                "KMT Jetline 50 Pump", "Chiller Ndetated Model: NCH-5APB"
+            ],
+            "DS": [
+                "Kneader 800L", "Kneader 1500L", "Material Transfer Conveyor",
+                "Extruder", "Calender Roll", "Talc Powder Applicator",
+                "Drying Chamber", "Dalilu Press Machine",
+                "Asphalt Delivery system - Asphalt pump A - Asphalt weighing hopper A",
+                "Asphalt Delivery system - Asphalt pump B - Asphalt weighing hopper B",
+                "Scrap Return Conveyor 1", "Scrap Return Conveyor 2",
+                "Scrap Return Conveyor 3", "Scrap Return Conveyor 4",
+                "Scrap Return Conveyor 5",
+                "Paper Pulverizer", "Paper Crusher", "PA Machine",
+                "Screw Compressor (Sullair) LS 10",
+                "Piston Compressor 1 - Model: VA-100",
+                "Air Dryer - Model: ACT55T/AC",
+                "Chiller HITACHI",
+                "Chiller DUNHAM BUSH - Model: ACDS040AUGS",
+                "ALFA LAVAL - HEAT EXCHANGER - Model: M10B-FM",
+                "Burner Ecoflam Multicolor 100 TC",
+                "Thermal oil burner 200,000 kcal",
+                "Overhead Hoist (HITACHI) - Model: EUDKUBN 10-1250"
+            ],
+            "Felt": [
+                "Pre Opener 1", "Bale Opener 2", "Bale Opener 3", "Bale Opener 4",
+                "Bale Opener 5", "Pre Opener 2", "Pre Opener 3 (Portable)",
+                "Fine Opener", "Airlay", "Hot Air Oven", "Air Cooling Machine",
+                "Shearing Cutter", "Cutter", "Dust Collector",
+                "Felt Recycling Machine No.1 Crusher No.1",
+                "Felt Recycling Machine No.2 Crusher No.2",
+                "Felt Recycling Machine No.3 Fine Opener",
+                "Recycling Dust Collector",
+                "100T Hydraulic Press Machine",
+                "Burner No.1", "Burner No.2", "D38L Press", "Recycling Crusher"
+            ]
+        };
+
+        function getMasterDeptKeyFromFilter(filter) {
+            if (filter === 'DS')   return 'DS';
+            if (filter === 'NVH')  return 'NVH';
+            if (filter === 'Felt') return 'Felt';
+            return 'ALL';
+        }
+
+        function deptCodeToMasterBucket(code) {
+            const c = String(code || '').trim().toUpperCase();
+            if (c === 'DS')   return 'DS';
+            if (c === 'NVH')  return 'NVH';
+            if (c === 'FELT' || c === 'FET') return 'Felt';
+            return null;
+        }
+
         let systemUsers = [
             { username: "admin", password: "123", role: "Super Administrator", name: "System Admin" },
             { username: "manager", password: "123", role: "Maintenance Manager", name: "Enc. Rahman" },
@@ -758,8 +857,6 @@
             return m ? m[1] : '';
         }
 
-        // Extracts the month (1-12) from an EJR record's Date field.
-        // Handles both ISO ("2025-11-03 00:00:00") and slash ("3/11/2025") formats.
         function extractEjrMonth(item) {
             const s = String(item.date || '').trim();
             const iso = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
@@ -767,9 +864,9 @@
             const dmy = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
             if (dmy) {
                 const a = parseInt(dmy[1], 10), b = parseInt(dmy[2], 10);
-                if (b > 12) return a;   // first part must be month (m/d/y)
-                if (a > 12) return b;   // second part must be month (d/m/y)
-                return b;               // ambiguous — assume d/m/y
+                if (b > 12) return a;
+                if (a > 12) return b;
+                return b;
             }
             return 0;
         }
@@ -874,7 +971,6 @@
         };
 
         let uptimeLineTargets = { "2026": 95.0, "2025": 94.0, "2024": 90.0 };
-
         let lineGraphDatasetYear = '2026';
 
         const deptData = {
@@ -887,7 +983,7 @@
             { date: "3/11/2025", ejrNo: "6108", dept: "DS", machine: "Kneader 1500L", jobRequest: "Bearing mixer spoilt (front bearing)", propose: "1) Need time to production stop and verify size of that bearing\n2) Bearing has been identified with supplier Rugau", planDate: "25/5/2026", pic: "Haziq", jobStart: "25/5/2026", timeStart: "9:00 AM", timeFinish: "10:00 AM", min: "60", downtime: "", notes: "CLOSE EJR first since need long shutdown about 14 days for repair job and plan to repair mixer 1 set fow kneader 800L first" },
             { date: "3/9/2025", ejrNo: "0005", dept: "FET", machine: "Bale Opener 5", jobRequest: "Spike roller shaft need to repair", propose: "Replacement of bearings on both left and right sides. Isse verified as not related to the shaft", planDate: "10/4/2026", pic: "Akim Rubel", jobStart: "10/4/2026", timeStart: "10:00 AM", timeFinish: "11:50 AM", min: "110", downtime: "", notes: "30/12/25: Barang belum receive, otw" },
             { date: "15/11/2025", ejrNo: "0008", dept: "DS", machine: "Kneader 1500L", jobRequest: "Material leaking", propose: "1) Need to plan for repair and change mixer. Contact DS PIC 18/11/2025 for further planning\n2) 1 set of mixer shaft need to be replace include packing. This job already consult contractor need at least 14 days for the job. Machine still can continue run.\n3) Check kneader 1500L, CLOSE EJR first, need to plan long date shutdown", planDate: "23/11/2025", pic: "Haziq", jobStart: "23/11/2025", timeStart: "9:00 AM", timeFinish: "12:00 PM", min: "180", downtime: "", notes: "" },
-            { date: "1/12/2025", ejrNo: "0035", dept: "DS", machine: "Burner EcoFETam Multicolor", jobRequest: "DS meter gas not function", propose: "Repair gear of meter", planDate: "13/1/2026", pic: "Khai Rubel", jobStart: "13/1/2026", timeStart: "9:00 AM", timeFinish: "5:00 PM", min: "480", downtime: "", notes: "Machine still running, no downtime" }
+            { date: "1/12/2025", ejrNo: "0035", dept: "DS", machine: "Burner Ecoflam Multicolor 100 TC", jobRequest: "DS meter gas not function", propose: "Repair gear of meter", planDate: "13/1/2026", pic: "Khai Rubel", jobStart: "13/1/2026", timeStart: "9:00 AM", timeFinish: "5:00 PM", min: "480", downtime: "", notes: "Machine still running, no downtime" }
         ];
         masterEjrList.forEach(it => { it.status = inferEjrStatus(it.notes); });
 
@@ -958,7 +1054,6 @@
             { id: 10, year: '2024', dept: "Felt", machine: "Exhaust Ductwork", date: "2024-08-14", desc: "Duct cleaning & static pressure test", status: "Done", postponedDate: "" }
         ];
 
-        // ===== Shared PM data via Google Sheets (replace with your deployed Apps Script URL) =====
         const PM_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzG1a_dSXxlTNLN7Sr9-LOggIOl7K6D3TVMsHXIDaL-A4JUA_0El-MVevsfrASWB4bGBg/exec";
 
         async function loadPmListFromServer() {
@@ -979,9 +1074,6 @@
             }
         }
 
-        // Google Sheets sometimes auto-converts date-looking text into a full ISO datetime
-        // (e.g. "2026-02-15T00:00:00.000Z") or a serial number. This normalizes it back to
-        // the plain "YYYY-MM-DD" string the rest of the app expects.
         function normalizeSheetDate_(val) {
             if (!val) return "";
             const s = String(val);
@@ -991,7 +1083,6 @@
         }
 
         async function addOrUpdatePmOnServer(record, isNew) {
-            // Update the screen immediately so it never looks "stuck" even if the network/server is slow or unreachable
             if (isNew) {
                 masterPmList.push(record);
             } else {
@@ -1012,7 +1103,6 @@
         }
 
         async function deletePmOnServer(id) {
-            // Remove locally right away
             const localIdx = masterPmList.findIndex(p => String(p.id) === String(id));
             if (localIdx !== -1) masterPmList.splice(localIdx, 1);
             try {
@@ -1174,10 +1264,16 @@
             ejrFilters.dept = dept;
             const ejrDeptSel = document.getElementById('ejrFilterDept');
             if (ejrDeptSel && [...ejrDeptSel.options].some(o => o.value === dept)) ejrDeptSel.value = dept;
+
             renderDashboard();
             renderEjrTables();
-            if (document.getElementById('view-machinehistory') && !document.getElementById('view-machinehistory').classList.contains('hidden')) {
+
+            if (document.getElementById('view-machinehistory') &&
+                !document.getElementById('view-machinehistory').classList.contains('hidden')) {
+                selectedMachineHistory = null;
                 populateMachineHistoryChips();
+                const deptInput = document.getElementById('mhDeptDisplayInput');
+                if (deptInput) deptInput.value = (dept === 'ALL') ? 'ALL LINES' : dept;
             }
         }
 
@@ -1203,63 +1299,81 @@
         let mhBreakdownChartInstance = null;
         let mhExpandedRowKey = null;
 
-        function getAllKnownMachines() {
-            const machines = new Map(); // name -> most-recently-seen dept
+        function getMachinesForCurrentFilter() {
+            const bucket = getMasterDeptKeyFromFilter(selectedDept);
+            let baseMachines = [];
+            if (bucket === 'ALL') {
+                baseMachines = [
+                    ...MASTER_MACHINES.DS.map(n => ({ name: n, dept: 'DS'   })),
+                    ...MASTER_MACHINES.NVH.map(n => ({ name: n, dept: 'NVH' })),
+                    ...MASTER_MACHINES.Felt.map(n => ({ name: n, dept: 'Felt' }))
+                ];
+            } else {
+                baseMachines = MASTER_MACHINES[bucket].map(n => ({ name: n, dept: bucket }));
+            }
+
+            const extraMap = new Map();
             masterEjrList.forEach(item => {
                 const name = (item.machine || '').trim();
-                if (name) machines.set(name, item.dept || machines.get(name) || '');
+                if (!name) return;
+                const b = deptCodeToMasterBucket(item.dept);
+                if (!b) return;
+                if (bucket !== 'ALL' && b !== bucket) return;
+                if (baseMachines.some(m => m.name === name)) return;
+                extraMap.set(name, { name, dept: b, isExtra: true });
             });
             masterPmList.forEach(item => {
                 const name = (item.machine || '').trim();
-                if (name && !machines.has(name)) machines.set(name, item.dept || '');
-                else if (name && item.dept) machines.set(name, item.dept);
+                if (!name) return;
+                const b = deptCodeToMasterBucket(item.dept);
+                if (!b) return;
+                if (bucket !== 'ALL' && b !== bucket) return;
+                if (baseMachines.some(m => m.name === name)) return;
+                extraMap.set(name, { name, dept: b, isExtra: true });
             });
-            return Array.from(machines.entries())
-                .map(([name, dept]) => ({ name, dept }))
-                .sort((a, b) => a.name.localeCompare(b.name));
-        }
 
-        // Maps the top-header line filter (ALL / DS / NVH / Felt) to the dept codes
-        // used across EJR (DS/NVH/FET) and PM (DS/NVH/Felt) records.
-        function machineMatchesSelectedDept(machineDept) {
-            if (selectedDept === 'ALL') return true;
-            const d = String(machineDept || '').trim().toUpperCase();
-            if (selectedDept === 'DS') return d === 'DS';
-            if (selectedDept === 'NVH') return d === 'NVH';
-            if (selectedDept === 'Felt') return d === 'FELT' || d === 'FET';
-            return true;
+            const merged = [...baseMachines, ...extraMap.values()];
+            merged.sort((a, b) => a.name.localeCompare(b.name));
+            return merged;
         }
 
         function populateMachineHistoryChips() {
-            const container = document.getElementById('machineHistoryChipsContainer');
+            const selectEl = document.getElementById('machineHistorySelect');
             const emptyState = document.getElementById('machineHistoryEmptyState');
             const content = document.getElementById('machineHistoryContent');
-            if (!container) return;
-            const allMachines = getAllKnownMachines();
-            const machines = allMachines.filter(m => machineMatchesSelectedDept(m.dept));
 
-            container.innerHTML = "";
+            const deptLabelEl = document.getElementById('mhDeptLabel');
+            if (deptLabelEl) {
+                deptLabelEl.textContent = selectedDept === 'ALL' ? 'ALL LINES' : selectedDept;
+            }
+            const deptInput = document.getElementById('mhDeptDisplayInput');
+            if (deptInput) deptInput.value = (selectedDept === 'ALL') ? 'ALL LINES' : selectedDept;
+
+            const machines = getMachinesForCurrentFilter();
+
+            if (!selectEl) return;
+
             if (machines.length === 0) {
-                emptyState.classList.remove('hidden');
-                content.classList.add('hidden');
+                selectEl.innerHTML = '<option value="">-- No machines --</option>';
+                if (emptyState) emptyState.classList.remove('hidden');
+                if (content) content.classList.add('hidden');
                 selectedMachineHistory = null;
                 return;
             }
-            emptyState.classList.add('hidden');
+            if (emptyState) emptyState.classList.add('hidden');
 
-            // Keep current selection if it's still valid for this filter, else pick the first
             if (!machines.some(m => m.name === selectedMachineHistory)) {
                 selectedMachineHistory = machines[0].name;
             }
 
+            selectEl.innerHTML = "";
             machines.forEach(m => {
-                const isActive = m.name === selectedMachineHistory;
-                const chip = document.createElement('button');
-                chip.type = 'button';
-                chip.onclick = () => selectMachineHistory(m.name);
-                chip.style.cssText = `padding: 0.4rem 0.85rem; font-size: 0.75rem; font-weight: 600; border-radius: 9999px; cursor: pointer; transition: all 0.15s; border: 1px solid ${isActive ? '#2563eb' : '#cbd5e1'}; background: ${isActive ? '#2563eb' : '#f8fafc'}; color: ${isActive ? '#fff' : '#475569'};`;
-                chip.innerHTML = `<i class="fa-solid fa-gear" style="margin-right: 0.3rem; ${isActive ? '' : 'color:#94a3b8;'}"></i>${m.name} <span style="opacity:0.75; font-size:0.68rem;">(${m.dept || '—'})</span>`;
-                container.appendChild(chip);
+                const opt = document.createElement('option');
+                opt.value = m.name;
+                const suffix = m.isExtra ? ' (unlisted)' : '';
+                opt.textContent = `${m.name} — ${m.dept}${suffix}`;
+                if (m.name === selectedMachineHistory) opt.selected = true;
+                selectEl.appendChild(opt);
             });
 
             renderMachineHistory();
@@ -1267,7 +1381,7 @@
 
         function selectMachineHistory(name) {
             selectedMachineHistory = name;
-            populateMachineHistoryChips(); // refreshes active chip styling + re-renders
+            renderMachineHistory();
         }
 
         function setMachineHistoryTypeFilter(type) {
@@ -1294,12 +1408,11 @@
             emptyState.classList.add('hidden');
             content.classList.remove('hidden');
 
-            const machines = getAllKnownMachines();
+            const machines = getMachinesForCurrentFilter();
             const machineInfo = machines.find(m => m.name === machineName);
             document.getElementById('mhSelectedMachineTitle').innerHTML = `<i class="fa-solid fa-gear" style="color: #2563eb; margin-right: 0.4rem;"></i> ${machineName}`;
             document.getElementById('mhDeptBadge').textContent = (machineInfo && machineInfo.dept) || 'Unassigned';
 
-            // Gather this machine's EJR + PM records
             const ejrRecords = masterEjrList.filter(item => (item.machine || '').trim() === machineName);
             const pmRecords = masterPmList.filter(item => (item.machine || '').trim() === machineName);
 
@@ -1312,7 +1425,6 @@
             document.getElementById('mhStatDowntime').textContent = (totalDowntimeMin / 60).toFixed(1) + ' hrs';
             document.getElementById('mhStatPmCount').textContent = pmRecords.length;
 
-            // Breakdown donut chart (EJR vs PM)
             const chartCtx = document.getElementById('mhBreakdownChart');
             if (chartCtx) {
                 if (mhBreakdownChartInstance) mhBreakdownChartInstance.destroy();
@@ -1329,7 +1441,6 @@
                 });
             }
 
-            // Build unified timeline
             let timeline = [];
             ejrRecords.forEach((item, i) => {
                 timeline.push({
@@ -1373,7 +1484,6 @@
                 timeline = timeline.filter(e => e.type === machineHistoryTypeFilter);
             }
 
-            // Info bar: most recent PM status / last EJR job
             const infoBar = document.getElementById('mhInfoBar');
             if (pmRecords.length > 0 || ejrRecords.length > 0) {
                 infoBar.classList.remove('hidden');
@@ -1385,7 +1495,6 @@
                 infoBar.classList.add('hidden');
             }
 
-            // Render the interactive (click-to-expand) table
             const tbody = document.getElementById('machineHistoryTableBody');
             tbody.innerHTML = "";
             if (timeline.length === 0) {
@@ -1704,19 +1813,6 @@
             alert('Uptime target limits updated successfully for all years!');
         }
 
-        // ▼▼▼ LIVE INDIVIDUAL LINE GRAPH (driven by EJR + manual uptime) ▼▼▼
-        // For the currently selected production line and the year chosen in the card's own
-        // year picker, this function:
-        //   1. Aggregates the "Downtime (min)" column from every matching EJR record into 12
-        //      monthly buckets (rows with blank/non-numeric downtime are ignored).
-        //   2. Distributes the line's manual annual Uptime evenly across 12 months.
-        //   3. Derives monthly Uptime % and Downtime % against the (uptime + downtime) base.
-        //   4. Plots the four metrics the user cares about:
-        //        • Uptime %           (blue line, left axis)
-        //        • Downtime %         (orange line, left axis)
-        //        • Target Uptime %    (green dashed, left axis)
-        //        • MTBF (hrs)         (purple dashed, right hours axis — constant per year)
-        //        • MTTR (hrs)         (red dashed, right hours axis — constant per year)
         function renderIndividualLineGraph() {
             const ctx = document.getElementById('individualLineGraph');
             if (!ctx) return;
@@ -1726,11 +1822,10 @@
             }
 
             const deptKey = selectedDept;
-            if (!deptData[deptKey]) return; // safety: only render for a real line
+            if (!deptData[deptKey]) return;
 
             const year = lineGraphDatasetYear;
 
-            // Map production line key -> EJR department codes that belong to it
             const LINE_TO_DEPT_CODES = {
                 'DS':   ['DS'],
                 'NVH':  ['NVH'],
@@ -1740,7 +1835,6 @@
 
             const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
-            // 1) Aggregate monthly downtime (minutes) from EJR records for this line + year
             const monthlyDowntimeMin = new Array(12).fill(0);
             const monthlyDowntimeCount = new Array(12).fill(0);
             masterEjrList.forEach(item => {
@@ -1756,11 +1850,9 @@
             });
             const monthlyDowntimeHrs = monthlyDowntimeMin.map(m => m / 60);
 
-            // 2) Distribute manual annual uptime evenly across 12 months
             const annualUptimeHrs = parseFloat(String(deptData[deptKey].uptime || '0').replace(/[^\d.\-]/g, '')) || 0;
             const monthlyUptimeHrs = annualUptimeHrs / 12;
 
-            // 3) Derive monthly % figures
             const uptimePct = [];
             const downtimePct = [];
             for (let i = 0; i < 12; i++) {
@@ -1780,7 +1872,6 @@
             const mtbfVal = parseFloat(deptData[deptKey].mtbfVal) || 0;
             const mttrVal = parseFloat(deptData[deptKey].mttrVal) || 0;
 
-            // Populate the year dropdown inside the card
             const yrSelElem = document.getElementById('lineGraphYearSelect');
             if (yrSelElem) {
                 yrSelElem.innerHTML = "";
@@ -1792,7 +1883,6 @@
                 });
             }
 
-            // Right-side "hours" axis range: accommodates both MTBF and MTTR comfortably
             const maxHours = Math.max(60, Math.ceil(Math.max(mtbfVal, mttrVal) * 1.2));
 
             individualLineChartInstance = new Chart(ctx.getContext('2d'), {
@@ -1800,55 +1890,11 @@
                 data: {
                     labels: months,
                     datasets: [
-                        {
-                            label: 'Uptime %',
-                            data: uptimePct,
-                            borderColor: '#2563eb',
-                            backgroundColor: '#2563eb',
-                            tension: 0.3,
-                            borderWidth: 2,
-                            pointRadius: 3,
-                            pointHoverRadius: 5,
-                            yAxisID: 'y'
-                        },
-                        {
-                            label: 'Downtime %',
-                            data: downtimePct,
-                            borderColor: '#d97706',
-                            backgroundColor: '#d97706',
-                            tension: 0.3,
-                            borderWidth: 2,
-                            pointRadius: 3,
-                            pointHoverRadius: 5,
-                            yAxisID: 'y'
-                        },
-                        {
-                            label: `Target Uptime (${targetVal}%)`,
-                            data: Array(12).fill(targetVal),
-                            borderColor: '#059669',
-                            borderDash: [4, 4],
-                            pointRadius: 0,
-                            borderWidth: 1.5,
-                            yAxisID: 'y'
-                        },
-                        {
-                            label: `MTBF (${mtbfVal.toFixed(1)} hrs)`,
-                            data: Array(12).fill(mtbfVal),
-                            borderColor: '#7c3aed',
-                            borderDash: [6, 3],
-                            pointRadius: 0,
-                            borderWidth: 1.5,
-                            yAxisID: 'yHours'
-                        },
-                        {
-                            label: `MTTR (${mttrVal.toFixed(1)} hrs)`,
-                            data: Array(12).fill(mttrVal),
-                            borderColor: '#dc2626',
-                            borderDash: [6, 3],
-                            pointRadius: 0,
-                            borderWidth: 1.5,
-                            yAxisID: 'yHours'
-                        }
+                        { label: 'Uptime %', data: uptimePct, borderColor: '#2563eb', backgroundColor: '#2563eb', tension: 0.3, borderWidth: 2, pointRadius: 3, pointHoverRadius: 5, yAxisID: 'y' },
+                        { label: 'Downtime %', data: downtimePct, borderColor: '#d97706', backgroundColor: '#d97706', tension: 0.3, borderWidth: 2, pointRadius: 3, pointHoverRadius: 5, yAxisID: 'y' },
+                        { label: `Target Uptime (${targetVal}%)`, data: Array(12).fill(targetVal), borderColor: '#059669', borderDash: [4, 4], pointRadius: 0, borderWidth: 1.5, yAxisID: 'y' },
+                        { label: `MTBF (${mtbfVal.toFixed(1)} hrs)`, data: Array(12).fill(mtbfVal), borderColor: '#7c3aed', borderDash: [6, 3], pointRadius: 0, borderWidth: 1.5, yAxisID: 'yHours' },
+                        { label: `MTTR (${mttrVal.toFixed(1)} hrs)`, data: Array(12).fill(mttrVal), borderColor: '#dc2626', borderDash: [6, 3], pointRadius: 0, borderWidth: 1.5, yAxisID: 'yHours' }
                     ]
                 },
                 options: {
@@ -1856,23 +1902,8 @@
                     maintainAspectRatio: false,
                     interaction: { mode: 'index', intersect: false },
                     scales: {
-                        y: {
-                            type: 'linear',
-                            position: 'left',
-                            min: 80,
-                            max: 100,
-                            ticks: { font: { size: 9 } },
-                            title: { display: true, text: 'Percentage (%)', font: { size: 9 }, color: '#475569' }
-                        },
-                        yHours: {
-                            type: 'linear',
-                            position: 'right',
-                            min: 0,
-                            max: maxHours,
-                            grid: { drawOnChartArea: false },
-                            ticks: { font: { size: 9 }, color: '#7c3aed' },
-                            title: { display: true, text: 'Hours', font: { size: 9 }, color: '#7c3aed' }
-                        },
+                        y: { type: 'linear', position: 'left', min: 80, max: 100, ticks: { font: { size: 9 } }, title: { display: true, text: 'Percentage (%)', font: { size: 9 }, color: '#475569' } },
+                        yHours: { type: 'linear', position: 'right', min: 0, max: maxHours, grid: { drawOnChartArea: false }, ticks: { font: { size: 9 }, color: '#7c3aed' }, title: { display: true, text: 'Hours', font: { size: 9 }, color: '#7c3aed' } },
                         x: { ticks: { font: { size: 9 } } }
                     },
                     plugins: {
@@ -1897,7 +1928,6 @@
                 }
             });
         }
-        // ▲▲▲ END OF LIVE INDIVIDUAL LINE GRAPH ▲▲▲
 
         let dashboardMtbfChartInstance = null;
         let dashboardMttrChartInstance = null;
@@ -2024,7 +2054,6 @@
                 }
             }
 
-            // Populate the dedicated department downtime summary cards
             const dt2 = computeFilteredDowntimeSummary(filtered);
             const hrs2 = (min) => (min / 60).toFixed(1);
             const setStat = (deptKey, min, count) => {
@@ -2366,6 +2395,22 @@
         }
         function closeMonthDetail() { document.getElementById('monthDetailCard').classList.add('hidden'); }
 
+        function populatePmMachineDropdown(preselect) {
+            const sel = document.getElementById('formPmMachineSelect');
+            if (!sel) return;
+            const dept = document.getElementById('formPmDept').value;
+            const list = MASTER_MACHINES[dept] || [];
+            sel.innerHTML = '<option value="">-- Select from master list --</option>' +
+                list.map(n => `<option value="${n}">${n}</option>`).join('');
+            if (preselect) sel.value = preselect;
+        }
+
+        function onPmMachineChange() {
+            const sel = document.getElementById('formPmMachineSelect');
+            const txt = document.getElementById('formPmMachine');
+            if (sel.value) txt.value = sel.value;
+        }
+
         function openAddPmModal() {
             document.getElementById('pmModalTitle').textContent = "Register Preventive Maintenance";
             document.getElementById('editPmIndex').value = -1;
@@ -2374,6 +2419,7 @@
             document.getElementById('formPmDesc').value = "";
             document.getElementById('formPmStatus').value = "Pending";
             document.getElementById('postponedDateWrapper').classList.add('hidden');
+            populatePmMachineDropdown();
             document.getElementById('pmModal').classList.remove('hidden');
         }
 
@@ -2383,6 +2429,7 @@
             document.getElementById('pmModalTitle').textContent = "Edit PM Schedule Record";
             document.getElementById('editPmIndex').value = index;
             document.getElementById('formPmDept').value = pm.dept;
+            populatePmMachineDropdown(pm.machine);
             document.getElementById('formPmMachine').value = pm.machine;
             document.getElementById('formPmDate').value = pm.date;
             document.getElementById('formPmDesc').value = pm.desc;
