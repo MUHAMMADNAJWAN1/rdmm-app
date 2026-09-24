@@ -92,6 +92,7 @@
                 <a href="#" onclick="switchView('ejr')" id="nav-ejr" class="sidebar-link"><i class="fa-solid fa-file-lines" style="width: 24px; text-align: center; margin-right: 0.5rem;"></i> EJR Register</a>
                 <a href="#" onclick="switchView('pm')" id="nav-pm" class="sidebar-link"><i class="fa-solid fa-calendar-check" style="width: 24px; text-align: center; margin-right: 0.5rem;"></i> PM Master Schedule</a>
                 <a href="#" onclick="switchView('reliability')" id="nav-reliability" class="sidebar-link"><i class="fa-solid fa-chart-line" style="width: 24px; text-align: center; margin-right: 0.5rem;"></i> Advanced Reliability</a>
+                <a href="#" onclick="switchView('machinehistory')" id="nav-machinehistory" class="sidebar-link"><i class="fa-solid fa-clock-rotate-left" style="width: 24px; text-align: center; margin-right: 0.5rem;"></i> Machine History</a>
                 <a href="#" onclick="switchView('reports')" id="nav-reports" class="sidebar-link"><i class="fa-solid fa-file-pdf" style="width: 24px; text-align: center; margin-right: 0.5rem;"></i> Reports & Export Suite</a>
                 <a href="#" onclick="switchView('admin')" id="nav-admin" class="sidebar-link hidden"><i class="fa-solid fa-shield-halved" style="width: 24px; text-align: center; margin-right: 0.5rem;"></i> Admin Console</a>
             </nav>
@@ -397,6 +398,65 @@
                             </div>
                             <div style="background: #f8fafc; padding: 1rem; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 0.75rem; color: #475569;">
                                 <strong>Weibull Engineering Conclusion:</strong> A shape parameter beta > 2.0 confirms an increasing hazard rate indicative of mechanical wear-out phase. Component replacement schedules should be enforced strictly before reaching 1,200 operating hours to suppress unplanned downtime.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="view-machinehistory" class="app-view space-y-6 hidden">
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.75rem;">
+                            <div>
+                                <h3 style="font-size: 0.875rem; font-weight: bold; color: #1e293b;"><i class="fa-solid fa-clock-rotate-left" style="color: #2563eb; margin-right: 0.5rem;"></i> Machine History & Lifetime Maintenance Log</h3>
+                                <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">Select a machine to view its complete combined history — every EJR repair job and every PM task ever recorded for it, in one timeline.</p>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.5rem; background: #f8fafc; border: 1px solid #cbd5e1; padding: 0.3rem 0.6rem; border-radius: 6px;">
+                                <label for="machineHistorySelector" style="font-size: 0.7rem; margin-bottom: 0; color: #475569;">Machine:</label>
+                                <select id="machineHistorySelector" onchange="renderMachineHistory()" style="background: transparent; border: none; font-weight: bold; color: #2563eb; font-size: 0.8125rem; width: 220px; padding: 0;"></select>
+                            </div>
+                        </div>
+                        <div id="machineHistoryEmptyState" style="text-align: center; padding: 2.5rem 1rem; color: #94a3b8;">
+                            <i class="fa-solid fa-gears" style="font-size: 1.75rem; margin-bottom: 0.5rem; display: block;"></i>
+                            No machines found yet. Register an EJR or PM record first, then its machine name will appear here.
+                        </div>
+                        <div id="machineHistoryContent" class="hidden">
+                            <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                                <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 1rem; border-radius: 8px;">
+                                    <span style="font-size: 0.75rem; color: #64748b;">Department</span>
+                                    <span id="mhStatDept" style="font-size: 1.125rem; font-weight: bold; color: #0f172a; margin-top: 0.25rem; display: block;">—</span>
+                                </div>
+                                <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 1rem; border-radius: 8px;">
+                                    <span style="font-size: 0.75rem; color: #1d4ed8;">Total EJR Repairs</span>
+                                    <span id="mhStatEjrCount" style="font-size: 1.25rem; font-weight: bold; color: #1d4ed8; margin-top: 0.25rem; display: block;">0</span>
+                                </div>
+                                <div style="background: #fffbeb; border: 1px solid #fde68a; padding: 1rem; border-radius: 8px;">
+                                    <span style="font-size: 0.75rem; color: #b45309;">Total Downtime Logged</span>
+                                    <span id="mhStatDowntime" style="font-size: 1.25rem; font-weight: bold; color: #b45309; margin-top: 0.25rem; display: block;">0.0 hrs</span>
+                                </div>
+                                <div style="background: #ecfdf5; border: 1px solid #a7f3d0; padding: 1rem; border-radius: 8px;">
+                                    <span style="font-size: 0.75rem; color: #047857;">Total PM Tasks</span>
+                                    <span id="mhStatPmCount" style="font-size: 1.25rem; font-weight: bold; color: #047857; margin-top: 0.25rem; display: block;">0</span>
+                                </div>
+                            </div>
+                            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 0.75rem; color: #475569;">
+                                <i class="fa-solid fa-circle-info" style="color: #2563eb; margin-right: 0.35rem;"></i>
+                                Most recent PM status: <strong id="mhLastPmStatus">—</strong>
+                                &nbsp;|&nbsp; Last EJR job request: <strong id="mhLastEjrJob">—</strong>
+                            </div>
+                            <h4 style="font-size: 0.8125rem; font-weight: bold; color: #1e293b; margin-bottom: 0.5rem;">Combined Timeline (Most Recent First)</h4>
+                            <div style="overflow: auto; max-height: 55vh;">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th style="position: sticky; top: 0; z-index: 5; width: 100px;">Date</th>
+                                            <th style="position: sticky; top: 0; z-index: 5; width: 90px;">Type</th>
+                                            <th style="position: sticky; top: 0; z-index: 5;">Description / Job Request</th>
+                                            <th style="position: sticky; top: 0; z-index: 5;">Details</th>
+                                            <th style="position: sticky; top: 0; z-index: 5; width: 120px;">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="machineHistoryTableBody"></tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
@@ -1067,6 +1127,7 @@
                 'ejr': 'EJR Master Register & Excel Uploader',
                 'pm': 'PM Master Schedule & Historical Year Recall',
                 'reliability': 'Advanced Reliability & Diagnostic Suite',
+                'machinehistory': 'Machine History & Lifetime Maintenance Log',
                 'reports': 'Reports & Direct Download Suite',
                 'admin': 'Superuser Administration Console & Settings'
             };
@@ -1075,6 +1136,7 @@
             if (viewId === 'dashboard') updateDashboardCharts();
             else if (viewId === 'reliability') { if (reliabilityChartInstance) reliabilityChartInstance.update(); }
             else if (viewId === 'reports') updateReportPreview();
+            else if (viewId === 'machinehistory') { populateMachineHistorySelector(); renderMachineHistory(); }
         }
 
         function switchReliabilityAnalysis(moduleKey) {
@@ -1116,6 +1178,142 @@
         }
 
         let individualLineChartInstance = null;
+
+        // ===== Machine History Tab =====
+        function getAllKnownMachines() {
+            const machines = new Map(); // name -> most-recently-seen dept
+            masterEjrList.forEach(item => {
+                const name = (item.machine || '').trim();
+                if (name) machines.set(name, item.dept || machines.get(name) || '');
+            });
+            masterPmList.forEach(item => {
+                const name = (item.machine || '').trim();
+                if (name && !machines.has(name)) machines.set(name, item.dept || '');
+                else if (name && item.dept) machines.set(name, item.dept);
+            });
+            return Array.from(machines.entries())
+                .map(([name, dept]) => ({ name, dept }))
+                .sort((a, b) => a.name.localeCompare(b.name));
+        }
+
+        function populateMachineHistorySelector() {
+            const sel = document.getElementById('machineHistorySelector');
+            if (!sel) return;
+            const machines = getAllKnownMachines();
+            const currentVal = sel.value;
+            sel.innerHTML = "";
+            if (machines.length === 0) {
+                sel.innerHTML = '<option value="">No machines yet</option>';
+                return;
+            }
+            machines.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m.name;
+                opt.textContent = m.name;
+                sel.appendChild(opt);
+            });
+            if (machines.some(m => m.name === currentVal)) sel.value = currentVal;
+        }
+
+        function renderMachineHistory() {
+            const sel = document.getElementById('machineHistorySelector');
+            const emptyState = document.getElementById('machineHistoryEmptyState');
+            const content = document.getElementById('machineHistoryContent');
+            if (!sel) return;
+            const machineName = sel.value;
+            const machines = getAllKnownMachines();
+
+            if (!machineName || machines.length === 0) {
+                emptyState.classList.remove('hidden');
+                content.classList.add('hidden');
+                return;
+            }
+            emptyState.classList.add('hidden');
+            content.classList.remove('hidden');
+
+            const machineInfo = machines.find(m => m.name === machineName);
+            document.getElementById('mhStatDept').textContent = (machineInfo && machineInfo.dept) || '—';
+
+            // Gather this machine's EJR records
+            const ejrRecords = masterEjrList.filter(item => (item.machine || '').trim() === machineName);
+            // Gather this machine's PM records
+            const pmRecords = masterPmList.filter(item => (item.machine || '').trim() === machineName);
+
+            // Downtime total (minutes -> hours) from EJR records
+            let totalDowntimeMin = 0;
+            ejrRecords.forEach(item => {
+                const dt = parseFloat(item.downtime);
+                if (!isNaN(dt) && dt > 0) totalDowntimeMin += dt;
+            });
+            document.getElementById('mhStatEjrCount').textContent = ejrRecords.length;
+            document.getElementById('mhStatDowntime').textContent = (totalDowntimeMin / 60).toFixed(1) + ' hrs';
+            document.getElementById('mhStatPmCount').textContent = pmRecords.length;
+
+            // Build a unified timeline: each entry gets a sortable timestamp
+            const timeline = [];
+            ejrRecords.forEach(item => {
+                timeline.push({
+                    sortTime: parseEjrDateForSort(item.date),
+                    dateLabel: item.date || '—',
+                    type: 'EJR',
+                    desc: item.jobRequest || '(no job request text)',
+                    details: item.propose ? item.propose.split('\n')[0] : (item.pic ? `PIC: ${item.pic}` : ''),
+                    status: item.status || 'Open',
+                    downtime: item.downtime || ''
+                });
+            });
+            pmRecords.forEach(item => {
+                const checkDate = item.status === 'Postponed' && item.postponedDate ? item.postponedDate : item.date;
+                timeline.push({
+                    sortTime: checkDate ? new Date(checkDate).getTime() : 0,
+                    dateLabel: item.date || '—',
+                    type: 'PM',
+                    desc: item.desc || '(no description)',
+                    details: item.status === 'Postponed' && item.postponedDate ? `Postponed to ${item.postponedDate}` : '',
+                    status: item.status || 'Pending',
+                    downtime: ''
+                });
+            });
+            timeline.sort((a, b) => b.sortTime - a.sortTime);
+
+            // Most recent PM status / last EJR job summary
+            const mostRecentPm = pmRecords.slice().sort((a, b) => {
+                const da = a.date ? new Date(a.date).getTime() : 0;
+                const db = b.date ? new Date(b.date).getTime() : 0;
+                return db - da;
+            })[0];
+            document.getElementById('mhLastPmStatus').textContent = mostRecentPm ? `${mostRecentPm.status} (${mostRecentPm.date || '—'})` : 'No PM records';
+
+            const mostRecentEjr = ejrRecords.slice().sort((a, b) => parseEjrDateForSort(b.date) - parseEjrDateForSort(a.date))[0];
+            document.getElementById('mhLastEjrJob').textContent = mostRecentEjr ? `"${mostRecentEjr.jobRequest || '—'}" (${mostRecentEjr.date || '—'})` : 'No EJR records';
+
+            // Render the table
+            const tbody = document.getElementById('machineHistoryTableBody');
+            tbody.innerHTML = "";
+            if (timeline.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#64748b; padding:1.5rem;">No history recorded yet for this machine.</td></tr>`;
+                return;
+            }
+            timeline.forEach(entry => {
+                const typeBadge = entry.type === 'EJR'
+                    ? `<span class="badge badge-blue"><i class="fa-solid fa-screwdriver-wrench"></i> EJR</span>`
+                    : `<span class="badge badge-emerald"><i class="fa-solid fa-calendar-check"></i> PM</span>`;
+                let statusBadgeClass = 'badge-blue';
+                if (entry.status === 'Closed' || entry.status === 'Done') statusBadgeClass = 'badge-emerald';
+                else if (entry.status === 'Pending' || entry.status === 'Open') statusBadgeClass = 'badge-amber';
+                else if (entry.status === 'Postponed') statusBadgeClass = 'badge-blue';
+                const downtimeNote = entry.downtime ? ` <span style="color:#b45309; font-size:0.7rem;">(${entry.downtime} min downtime)</span>` : '';
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="white-space: nowrap;">${entry.dateLabel}</td>
+                        <td>${typeBadge}</td>
+                        <td>${entry.desc}${downtimeNote}</td>
+                        <td style="color:#64748b; font-size:0.75rem;">${entry.details || '—'}</td>
+                        <td><span class="badge ${statusBadgeClass}">${entry.status}</span></td>
+                    </tr>
+                `;
+            });
+        }
 
         function openEditSummaryModal(deptKey) {
             const d = deptData[deptKey]; if (!d) return;
