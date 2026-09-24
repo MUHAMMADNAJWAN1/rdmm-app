@@ -405,72 +405,53 @@
 
                 <div id="view-machinehistory" class="app-view space-y-6 hidden">
                     <div class="card">
-                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.75rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.75rem;">
                             <div>
                                 <h3 style="font-size: 0.875rem; font-weight: bold; color: #1e293b;"><i class="fa-solid fa-clock-rotate-left" style="color: #2563eb; margin-right: 0.5rem;"></i> Machine History & Lifetime Maintenance Log</h3>
                                 <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">Select a machine to view its complete combined history — every EJR repair job and every PM task ever recorded for it, in one timeline.</p>
                             </div>
-                            <div id="machineHistoryDropdownWrapper" style="min-width: 280px;">
-                                <label for="machineHistorySearch" style="font-size: 0.7rem; margin-bottom: 0.3rem; color: #475569;">Machine (type to search):</label>
-                                <input type="text" id="machineHistorySearch" list="machineHistoryDatalist" placeholder="e.g. Calender Roll, Kneader…" oninput="onMachineHistorySearchInput(this.value)" style="font-weight: 600; color: #1e293b;">
-                                <datalist id="machineHistoryDatalist"></datalist>
+                            <div style="display: flex; align-items: center; gap: 0.5rem; background: #f8fafc; border: 1px solid #cbd5e1; padding: 0.3rem 0.6rem; border-radius: 6px;">
+                                <label for="machineHistorySelector" style="font-size: 0.7rem; margin-bottom: 0; color: #475569;">Machine:</label>
+                                <select id="machineHistorySelector" onchange="renderMachineHistory()" style="background: transparent; border: none; font-weight: bold; color: #2563eb; font-size: 0.8125rem; width: 220px; padding: 0;"></select>
                             </div>
                         </div>
                         <div id="machineHistoryEmptyState" style="text-align: center; padding: 2.5rem 1rem; color: #94a3b8;">
                             <i class="fa-solid fa-gears" style="font-size: 1.75rem; margin-bottom: 0.5rem; display: block;"></i>
-                            No machines found for this line yet.
+                            No machines found yet. Register an EJR or PM record first, then its machine name will appear here.
                         </div>
-                    </div>
-
-                    <div id="machineHistoryContent" class="hidden space-y-6">
-                        <div class="card">
-                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-                                <h3 id="mhSelectedMachineTitle" style="font-size: 1rem; font-weight: bold; color: #0f172a;"><i class="fa-solid fa-gear" style="color: #2563eb; margin-right: 0.4rem;"></i> —</h3>
-                                <span id="mhDeptBadge" class="badge badge-blue">—</span>
-                            </div>
-                            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; margin-top: 1rem;">
-                                <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem;">
-                                    <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 1rem; border-radius: 8px;">
-                                        <span style="font-size: 0.75rem; color: #1d4ed8;">Total EJR Repairs</span>
-                                        <span id="mhStatEjrCount" style="font-size: 1.35rem; font-weight: bold; color: #1d4ed8; margin-top: 0.25rem; display: block;">0</span>
-                                    </div>
-                                    <div style="background: #fffbeb; border: 1px solid #fde68a; padding: 1rem; border-radius: 8px;">
-                                        <span style="font-size: 0.75rem; color: #b45309;">Total Downtime Logged</span>
-                                        <span id="mhStatDowntime" style="font-size: 1.35rem; font-weight: bold; color: #b45309; margin-top: 0.25rem; display: block;">0.0 hrs</span>
-                                    </div>
-                                    <div style="background: #ecfdf5; border: 1px solid #a7f3d0; padding: 1rem; border-radius: 8px;">
-                                        <span style="font-size: 0.75rem; color: #047857;">Total PM Tasks</span>
-                                        <span id="mhStatPmCount" style="font-size: 1.35rem; font-weight: bold; color: #047857; margin-top: 0.25rem; display: block;">0</span>
-                                    </div>
-                                    <div class="hidden" style="grid-column: span 3; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.75rem 1rem; font-size: 0.75rem; color: #475569;" id="mhInfoBar">
-                                        <i class="fa-solid fa-circle-info" style="color: #2563eb; margin-right: 0.35rem;"></i>
-                                        Most recent PM status: <strong id="mhLastPmStatus">—</strong>
-                                        &nbsp;|&nbsp; Last EJR job request: <strong id="mhLastEjrJob">—</strong>
-                                    </div>
+                        <div id="machineHistoryContent" class="hidden">
+                            <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                                <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 1rem; border-radius: 8px;">
+                                    <span style="font-size: 0.75rem; color: #64748b;">Department</span>
+                                    <span id="mhStatDept" style="font-size: 1.125rem; font-weight: bold; color: #0f172a; margin-top: 0.25rem; display: block;">—</span>
                                 </div>
-                                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.75rem; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                                    <span style="font-size: 0.7rem; color: #64748b; font-weight: 600; text-transform: uppercase; margin-bottom: 0.35rem;">EJR vs PM Breakdown</span>
-                                    <div style="height: 110px; width: 100%; position: relative;"><canvas id="mhBreakdownChart"></canvas></div>
+                                <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 1rem; border-radius: 8px;">
+                                    <span style="font-size: 0.75rem; color: #1d4ed8;">Total EJR Repairs</span>
+                                    <span id="mhStatEjrCount" style="font-size: 1.25rem; font-weight: bold; color: #1d4ed8; margin-top: 0.25rem; display: block;">0</span>
+                                </div>
+                                <div style="background: #fffbeb; border: 1px solid #fde68a; padding: 1rem; border-radius: 8px;">
+                                    <span style="font-size: 0.75rem; color: #b45309;">Total Downtime Logged</span>
+                                    <span id="mhStatDowntime" style="font-size: 1.25rem; font-weight: bold; color: #b45309; margin-top: 0.25rem; display: block;">0.0 hrs</span>
+                                </div>
+                                <div style="background: #ecfdf5; border: 1px solid #a7f3d0; padding: 1rem; border-radius: 8px;">
+                                    <span style="font-size: 0.75rem; color: #047857;">Total PM Tasks</span>
+                                    <span id="mhStatPmCount" style="font-size: 1.25rem; font-weight: bold; color: #047857; margin-top: 0.25rem; display: block;">0</span>
                                 </div>
                             </div>
-                        </div>
-
-                        <div class="card">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
-                                <h4 style="font-size: 0.8125rem; font-weight: bold; color: #1e293b;">Combined Timeline (Most Recent First) <span style="font-weight: 500; color: #64748b; font-size: 0.75rem;">— click a row for full details</span></h4>
-                                <div style="display: flex; background: #f1f5f9; padding: 3px; border-radius: 8px; border: 1px solid #cbd5e1; gap: 2px;">
-                                    <button onclick="setMachineHistoryTypeFilter('ALL')" id="mh-type-all" class="mh-type-btn" style="padding: 0.3rem 0.65rem; font-size: 0.7rem; font-weight: 600; border-radius: 6px; border: none; cursor: pointer; background: #2563eb; color: #fff;">All</button>
-                                    <button onclick="setMachineHistoryTypeFilter('EJR')" id="mh-type-ejr" class="mh-type-btn" style="padding: 0.3rem 0.65rem; font-size: 0.7rem; font-weight: 600; border-radius: 6px; border: none; cursor: pointer; background: transparent; color: #475569;">EJR Only</button>
-                                    <button onclick="setMachineHistoryTypeFilter('PM')" id="mh-type-pm" class="mh-type-btn" style="padding: 0.3rem 0.65rem; font-size: 0.7rem; font-weight: 600; border-radius: 6px; border: none; cursor: pointer; background: transparent; color: #475569;">PM Only</button>
-                                </div>
+                            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 0.75rem; color: #475569;">
+                                <i class="fa-solid fa-circle-info" style="color: #2563eb; margin-right: 0.35rem;"></i>
+                                Most recent PM status: <strong id="mhLastPmStatus">—</strong>
+                                &nbsp;|&nbsp; Last EJR job request: <strong id="mhLastEjrJob">—</strong>
                             </div>
-                            <div style="overflow: auto; max-height: 50vh;">
+                            <h4 style="font-size: 0.8125rem; font-weight: bold; color: #1e293b; margin-bottom: 0.5rem;">Combined Timeline (Most Recent First)</h4>
+                            <div style="overflow: auto; max-height: 55vh;">
                                 <table>
                                     <thead>
                                         <tr>
                                             <th style="position: sticky; top: 0; z-index: 5; width: 100px;">Date</th>
                                             <th style="position: sticky; top: 0; z-index: 5; width: 90px;">Type</th>
                                             <th style="position: sticky; top: 0; z-index: 5;">Description / Job Request</th>
+                                            <th style="position: sticky; top: 0; z-index: 5;">Details</th>
                                             <th style="position: sticky; top: 0; z-index: 5; width: 120px;">Status</th>
                                         </tr>
                                     </thead>
@@ -583,10 +564,7 @@
                             <option value="DS">DS</option><option value="NVH">NVH</option><option value="Felt">Felt</option><option value="FET">FET</option>
                         </select>
                     </div>
-                    <div><label>Machine/ Area</label>
-                        <input type="text" id="formEjrMachine" list="ejrMachineDatalist" placeholder="Start typing or pick a machine…">
-                        <datalist id="ejrMachineDatalist"></datalist>
-                    </div>
+                    <div><label>Machine/ Area</label><input type="text" id="formEjrMachine" placeholder="e.g. Kneader 1500L"></div>
                 </div>
                 <div><label>Job Request</label><input type="text" id="formEjrJobRequest" required placeholder="Describe the job request"></div>
                 <div><label>Propose/Action Taken</label><textarea id="formEjrPropose" rows="3" placeholder="Proposed action / steps taken"></textarea></div>
@@ -661,12 +639,9 @@
             <form id="pmForm" onsubmit="savePmRecord(event)" style="display: flex; flex-direction: column; gap: 1rem;">
                 <input type="hidden" id="editPmIndex" value="-1">
                 <div><label>Department Code</label>
-                    <select id="formPmDept" onchange="onPmDeptChange()"><option value="DS">DS</option><option value="NVH">NVH</option><option value="Felt">Felt</option></select>
+                    <select id="formPmDept"><option value="DS">DS</option><option value="NVH">NVH</option><option value="Felt">Felt</option></select>
                 </div>
-                <div><label>Machine Name</label>
-                    <input type="text" id="formPmMachine" required list="pmMachineDatalist" placeholder="e.g. Press Machine #3">
-                    <datalist id="pmMachineDatalist"></datalist>
-                </div>
+                <div><label>Machine Name</label><input type="text" id="formPmMachine" required placeholder="e.g. Press Machine #3"></div>
                 <div><label>Scheduled Date</label><input type="date" id="formPmDate" required></div>
                 <div><label>PM Description</label><input type="text" id="formPmDesc" required placeholder="e.g. Lubrication & Bearing Check"></div>
                 <div><label>Execution Status</label>
@@ -746,40 +721,6 @@
     </div>
 
     <script>
-        // ===== Master Equipment List (per Department) — source of truth for Machine History
-        //       dropdown, and also used to power the EJR / PM machine-name suggestions. =====
-        const MACHINE_MASTER_LIST = {
-            "NVH": [
-                "150T Hydraulic Press","250T Hydraulic Press","600TA Hydraulic Press","600TB Hydraulic Press",
-                "300T Hydraulic Press","400T Hydraulic Press","50T Die Cut Hydraulic Press","100T Die Cut Hydraulic Press",
-                "Hot Plate No.1 (Hydraulic Press)","Hot Plate No.2 (Pneumatic Press)","Hot Plate No.3 (Pneumatic Press)",
-                "Electric Hot Plate","Hot Melt Glue No.1","Hot Melt Glue No.2","Auto Hot Melt Glue No.1","Auto Hot Melt Glue No.2",
-                "Laminate Oven","Mini Oven","Hot Air Oven No.1 (Burner)","Hot Air Oven No.2 (Burner)",
-                "Portable Oil Heater No.1","Portable Oil Heater No.2","Hydraulic Press Scrap Machine","Mould Turning Device",
-                "Cooling Tower No.1","Cooling Tower No.2","Cooling Tower No.3","Water Chiller No.1","Water Chiller No.2",
-                "Water Chiller No.3 (Amcon)","Screw Compressor (SULLAIR) WS 3708 AC","Air Compressor - KOBELCO 30H/P Model: SG22A-H",
-                "Air Dryer Main Line Model: CKD GX 137-H-AC200V","Thermo Oil Burner 400,000 kcal 24 kW","Thermo Oil Strainer",
-                "Thermo Oil Pump","PU Machine","Pneumatic Jig","NVH Felt Recycling Crusher","Water Jet Cutting Robot",
-                "KMT Jetline 50 Pump","Chiller Ndetated Model: NCH-5APB"
-            ],
-            "DS": [
-                "Kneader 800L","Kneader 1500L","Material Transfer Conveyor","Extruder","Calender Roll","Talc Powder Applicator",
-                "Drying Chamber","Dalilu Press Machine","Asphalt Delivery system - Asphalt pump A - Asphalt weighing hopper A",
-                "Asphalt Delivery system - Asphalt pump B - Asphalt weighing hopper B","Scrap Return Conveyor 1","Scrap Return Conveyor 2",
-                "Scrap Return Conveyor 3","Scrap Return Conveyor 4","Scrap Return Conveyor 5","Paper Pulverizer","Paper Crusher",
-                "PA Machine","Screw Compressor (Sullair) LS 10","Piston Compressor 1 - Model: VA-100","Air Dryer - Model: ACT55T/AC",
-                "Chiller HITACHI","Chiller DUNHAM BUSH - Model: ACDS040AUGS","ALFA LAVAL - HEAT EXCHANGER - Model: M10B-FM",
-                "Burner Ecoflam Multicolor 100 TC","Thermal oil burner 200,000 kcal","Overhead Hoist (HITACHI) - Model: EUDKUBN 10-1250"
-            ],
-            "Felt": [
-                "Pre Opener 1","Bale Opener 2","Bale Opener 3","Bale Opener 4","Bale Opener 5","Pre Opener 2",
-                "Pre Opener 3 (Portable)","Fine Opener","Airlay","Hot Air Oven","Air Cooling Machine","Shearing Cutter",
-                "Cutter","Dust Collector","Felt Recycling Machine No.1 Crusher No.1","Felt Recycling Machine No.2 Crusher No.2",
-                "Felt Recycling Machine No.3 Fine Opener","Recycling Dust Collector","100T Hydraulic Press Machine",
-                "Burner No.1","Burner No.2","D38L Press","Recycling Crusher"
-            ]
-        };
-
         let systemUsers = [
             { username: "admin", password: "123", role: "Super Administrator", name: "System Admin" },
             { username: "manager", password: "123", role: "Maintenance Manager", name: "Enc. Rahman" },
@@ -1146,7 +1087,6 @@
                 checkUpcomingPmNotifications();
                 recomputeDeptStatsFromEjr();
                 populateEjrFilterDropdowns();
-                populateMachineDatalists();
                 renderDashboard();
                 renderEjrTables();
                 await loadPmListFromServer();
@@ -1196,7 +1136,7 @@
             if (viewId === 'dashboard') updateDashboardCharts();
             else if (viewId === 'reliability') { if (reliabilityChartInstance) reliabilityChartInstance.update(); }
             else if (viewId === 'reports') updateReportPreview();
-            else if (viewId === 'machinehistory') { populateMachineHistoryDropdown(); }
+            else if (viewId === 'machinehistory') { populateMachineHistorySelector(); renderMachineHistory(); }
         }
 
         function switchReliabilityAnalysis(moduleKey) {
@@ -1221,9 +1161,6 @@
             if (ejrDeptSel && [...ejrDeptSel.options].some(o => o.value === dept)) ejrDeptSel.value = dept;
             renderDashboard();
             renderEjrTables();
-            if (document.getElementById('view-machinehistory') && !document.getElementById('view-machinehistory').classList.contains('hidden')) {
-                populateMachineHistoryDropdown();
-            }
         }
 
         function checkUpcomingPmNotifications() {
@@ -1243,151 +1180,66 @@
         let individualLineChartInstance = null;
 
         // ===== Machine History Tab =====
-        let selectedMachineHistory = null;
-        let machineHistoryTypeFilter = 'ALL';
-        let mhBreakdownChartInstance = null;
-        let mhExpandedRowKey = null;
-
-        // Full department -> machine list, driven by the hardcoded master schedule
-        // (MACHINE_MASTER_LIST), so every machine shows up in the dropdown even if it
-        // has zero EJR/PM records yet. Any machine name found in EJR/PM history that is
-        // NOT on the master list is appended too, so nothing gets silently dropped.
         function getAllKnownMachines() {
-            const historyDeptFor = new Map();
+            const machines = new Map(); // name -> most-recently-seen dept
             masterEjrList.forEach(item => {
                 const name = (item.machine || '').trim();
-                if (name) historyDeptFor.set(name, item.dept || historyDeptFor.get(name) || '');
+                if (name) machines.set(name, item.dept || machines.get(name) || '');
             });
             masterPmList.forEach(item => {
                 const name = (item.machine || '').trim();
-                if (name && !historyDeptFor.has(name)) historyDeptFor.set(name, item.dept || '');
+                if (name && !machines.has(name)) machines.set(name, item.dept || '');
+                else if (name && item.dept) machines.set(name, item.dept);
             });
-
-            const list = [];
-            Object.keys(MACHINE_MASTER_LIST).forEach(dept => {
-                MACHINE_MASTER_LIST[dept].forEach(name => list.push({ name, dept }));
-            });
-
-            historyDeptFor.forEach((dept, name) => {
-                if (!list.some(m => m.name === name)) list.push({ name, dept: dept || 'Unassigned' });
-            });
-
-            return list;
+            return Array.from(machines.entries())
+                .map(([name, dept]) => ({ name, dept }))
+                .sort((a, b) => a.name.localeCompare(b.name));
         }
 
-        // Maps the top-header line filter (ALL / DS / NVH / Felt) to the dept codes
-        // used across EJR (DS/NVH/FET) and PM (DS/NVH/Felt) records / master list.
-        function machineMatchesSelectedDept(machineDept) {
-            if (selectedDept === 'ALL') return true;
-            const d = String(machineDept || '').trim().toUpperCase();
-            if (selectedDept === 'DS') return d === 'DS';
-            if (selectedDept === 'NVH') return d === 'NVH';
-            if (selectedDept === 'Felt') return d === 'FELT' || d === 'FET';
-            return true;
-        }
-
-        // Builds the <datalist> of machine-name suggestions (filtered to the currently
-        // selected DS/NVH/Feltline line) and keeps the search box + selection in sync.
-        // Typing e.g. "cal" will suggest "Calender Roll" via the browser's native
-        // datalist matching (matches anywhere in the name, not just the start).
-        function populateMachineHistoryDropdown() {
-            const wrapper = document.getElementById('machineHistoryDropdownWrapper');
-            const emptyState = document.getElementById('machineHistoryEmptyState');
-            const content = document.getElementById('machineHistoryContent');
-            const searchInput = document.getElementById('machineHistorySearch');
-            const datalist = document.getElementById('machineHistoryDatalist');
-            if (!searchInput || !datalist) return;
-
-            const allMachines = getAllKnownMachines();
-            const machines = allMachines.filter(m => machineMatchesSelectedDept(m.dept));
-
+        function populateMachineHistorySelector() {
+            const sel = document.getElementById('machineHistorySelector');
+            if (!sel) return;
+            const machines = getAllKnownMachines();
+            const currentVal = sel.value;
+            sel.innerHTML = "";
             if (machines.length === 0) {
-                wrapper.classList.add('hidden');
-                emptyState.classList.remove('hidden');
-                content.classList.add('hidden');
-                selectedMachineHistory = null;
-                searchInput.value = '';
-                datalist.innerHTML = '';
+                sel.innerHTML = '<option value="">No machines yet</option>';
                 return;
             }
-            wrapper.classList.remove('hidden');
-            emptyState.classList.add('hidden');
-
-            if (!machines.some(m => m.name === selectedMachineHistory)) {
-                selectedMachineHistory = machines[0].name;
-            }
-
-            // Sort alphabetically within each dept, DS -> NVH -> Felt -> Unassigned order
-            const deptOrder = ['DS', 'NVH', 'Felt', 'Unassigned'];
-            const sorted = machines.slice().sort((a, b) => {
-                const ia = deptOrder.indexOf(a.dept), ib = deptOrder.indexOf(b.dept);
-                const da = (ia === -1 ? 99 : ia), db = (ib === -1 ? 99 : ib);
-                if (da !== db) return da - db;
-                return a.name.localeCompare(b.name);
+            machines.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m.name;
+                opt.textContent = m.name;
+                sel.appendChild(opt);
             });
-
-            datalist.innerHTML = sorted.map(m =>
-                `<option value="${m.name.replace(/"/g, '&quot;')}">${m.dept}</option>`
-            ).join('');
-
-            searchInput.value = selectedMachineHistory;
-            renderMachineHistory();
-        }
-
-        // Fires on every keystroke in the search box. Only switches the displayed
-        // machine once the typed text exactly matches a known machine name (i.e. the
-        // user picked a suggestion or finished typing the exact name) — partial text
-        // while still typing does not clear/reset the view.
-        function onMachineHistorySearchInput(value) {
-            const allMachines = getAllKnownMachines();
-            const machines = allMachines.filter(m => machineMatchesSelectedDept(m.dept));
-            const match = machines.find(m => m.name.toLowerCase() === String(value || '').trim().toLowerCase());
-            if (match) {
-                selectedMachineHistory = match.name;
-                renderMachineHistory();
-            }
-        }
-
-        function selectMachineHistory(name) {
-            selectedMachineHistory = name;
-            const searchInput = document.getElementById('machineHistorySearch');
-            if (searchInput) searchInput.value = name;
-            renderMachineHistory();
-        }
-
-        function setMachineHistoryTypeFilter(type) {
-            machineHistoryTypeFilter = type;
-            ['all', 'ejr', 'pm'].forEach(key => {
-                const btn = document.getElementById('mh-type-' + key);
-                if (!btn) return;
-                const isActive = key.toUpperCase() === type;
-                btn.style.background = isActive ? '#2563eb' : 'transparent';
-                btn.style.color = isActive ? '#fff' : '#475569';
-            });
-            renderMachineHistory();
+            if (machines.some(m => m.name === currentVal)) sel.value = currentVal;
         }
 
         function renderMachineHistory() {
-            const content = document.getElementById('machineHistoryContent');
+            const sel = document.getElementById('machineHistorySelector');
             const emptyState = document.getElementById('machineHistoryEmptyState');
-            const machineName = selectedMachineHistory;
-            if (!machineName) {
-                if (content) content.classList.add('hidden');
-                if (emptyState) emptyState.classList.remove('hidden');
+            const content = document.getElementById('machineHistoryContent');
+            if (!sel) return;
+            const machineName = sel.value;
+            const machines = getAllKnownMachines();
+
+            if (!machineName || machines.length === 0) {
+                emptyState.classList.remove('hidden');
+                content.classList.add('hidden');
                 return;
             }
             emptyState.classList.add('hidden');
             content.classList.remove('hidden');
 
-            const machines = getAllKnownMachines();
             const machineInfo = machines.find(m => m.name === machineName);
-            document.getElementById('mhSelectedMachineTitle').innerHTML = `<i class="fa-solid fa-gear" style="color: #2563eb; margin-right: 0.4rem;"></i> ${machineName}`;
-            document.getElementById('mhDeptBadge').textContent = (machineInfo && machineInfo.dept) || 'Unassigned';
+            document.getElementById('mhStatDept').textContent = (machineInfo && machineInfo.dept) || '—';
 
-            // Gather this machine's EJR + PM records
+            // Gather this machine's EJR records
             const ejrRecords = masterEjrList.filter(item => (item.machine || '').trim() === machineName);
+            // Gather this machine's PM records
             const pmRecords = masterPmList.filter(item => (item.machine || '').trim() === machineName);
 
+            // Downtime total (minutes -> hours) from EJR records
             let totalDowntimeMin = 0;
             ejrRecords.forEach(item => {
                 const dt = parseFloat(item.downtime);
@@ -1397,84 +1249,49 @@
             document.getElementById('mhStatDowntime').textContent = (totalDowntimeMin / 60).toFixed(1) + ' hrs';
             document.getElementById('mhStatPmCount').textContent = pmRecords.length;
 
-            // Breakdown donut chart (EJR vs PM)
-            const chartCtx = document.getElementById('mhBreakdownChart');
-            if (chartCtx) {
-                if (mhBreakdownChartInstance) mhBreakdownChartInstance.destroy();
-                mhBreakdownChartInstance = new Chart(chartCtx.getContext('2d'), {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['EJR Repairs', 'PM Tasks'],
-                        datasets: [{ data: [ejrRecords.length, pmRecords.length], backgroundColor: ['#2563eb', '#059669'], borderWidth: 0 }]
-                    },
-                    options: {
-                        responsive: true, maintainAspectRatio: false, cutout: '65%',
-                        plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 9 }, padding: 6 } } }
-                    }
-                });
-            }
-
-            // Build unified timeline
-            let timeline = [];
-            ejrRecords.forEach((item, i) => {
+            // Build a unified timeline: each entry gets a sortable timestamp
+            const timeline = [];
+            ejrRecords.forEach(item => {
                 timeline.push({
-                    key: 'ejr-' + i,
                     sortTime: parseEjrDateForSort(item.date),
                     dateLabel: item.date || '—',
                     type: 'EJR',
                     desc: item.jobRequest || '(no job request text)',
+                    details: item.propose ? item.propose.split('\n')[0] : (item.pic ? `PIC: ${item.pic}` : ''),
                     status: item.status || 'Open',
-                    downtime: item.downtime || '',
-                    fullDetails: {
-                        'Propose / Action Taken': item.propose || '—',
-                        'Person In Charge': item.pic || '—',
-                        'Plan Job Date': item.planDate || '—',
-                        'Job Start': item.jobStart ? `${item.jobStart} ${item.timeStart || ''} – ${item.timeFinish || ''}` : '—',
-                        'Downtime': item.downtime ? `${item.downtime} min` : '—',
-                        'Notes': item.notes || '—'
-                    }
+                    downtime: item.downtime || ''
                 });
             });
-            pmRecords.forEach((item, i) => {
+            pmRecords.forEach(item => {
                 const checkDate = item.status === 'Postponed' && item.postponedDate ? item.postponedDate : item.date;
                 timeline.push({
-                    key: 'pm-' + i,
                     sortTime: checkDate ? new Date(checkDate).getTime() : 0,
                     dateLabel: item.date || '—',
                     type: 'PM',
                     desc: item.desc || '(no description)',
+                    details: item.status === 'Postponed' && item.postponedDate ? `Postponed to ${item.postponedDate}` : '',
                     status: item.status || 'Pending',
-                    downtime: '',
-                    fullDetails: {
-                        'Department': item.dept || '—',
-                        'Status': item.status || '—',
-                        'Postponed To': item.postponedDate || '—'
-                    }
+                    downtime: ''
                 });
             });
             timeline.sort((a, b) => b.sortTime - a.sortTime);
 
-            if (machineHistoryTypeFilter !== 'ALL') {
-                timeline = timeline.filter(e => e.type === machineHistoryTypeFilter);
-            }
+            // Most recent PM status / last EJR job summary
+            const mostRecentPm = pmRecords.slice().sort((a, b) => {
+                const da = a.date ? new Date(a.date).getTime() : 0;
+                const db = b.date ? new Date(b.date).getTime() : 0;
+                return db - da;
+            })[0];
+            document.getElementById('mhLastPmStatus').textContent = mostRecentPm ? `${mostRecentPm.status} (${mostRecentPm.date || '—'})` : 'No PM records';
 
-            // Info bar: most recent PM status / last EJR job
-            const infoBar = document.getElementById('mhInfoBar');
-            if (pmRecords.length > 0 || ejrRecords.length > 0) {
-                infoBar.classList.remove('hidden');
-                const mostRecentPm = pmRecords.slice().sort((a, b) => (new Date(b.date || 0)) - (new Date(a.date || 0)))[0];
-                document.getElementById('mhLastPmStatus').textContent = mostRecentPm ? `${mostRecentPm.status} (${mostRecentPm.date || '—'})` : 'No PM records';
-                const mostRecentEjr = ejrRecords.slice().sort((a, b) => parseEjrDateForSort(b.date) - parseEjrDateForSort(a.date))[0];
-                document.getElementById('mhLastEjrJob').textContent = mostRecentEjr ? `"${mostRecentEjr.jobRequest || '—'}" (${mostRecentEjr.date || '—'})` : 'No EJR records';
-            } else {
-                infoBar.classList.add('hidden');
-            }
+            const mostRecentEjr = ejrRecords.slice().sort((a, b) => parseEjrDateForSort(b.date) - parseEjrDateForSort(a.date))[0];
+            document.getElementById('mhLastEjrJob').textContent = mostRecentEjr ? `"${mostRecentEjr.jobRequest || '—'}" (${mostRecentEjr.date || '—'})` : 'No EJR records';
 
-            // Render the interactive (click-to-expand) table
+            // Render the table
             const tbody = document.getElementById('machineHistoryTableBody');
             tbody.innerHTML = "";
             if (timeline.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#64748b; padding:1.5rem;">No ${machineHistoryTypeFilter === 'ALL' ? 'history' : machineHistoryTypeFilter} records for this machine yet.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#64748b; padding:1.5rem;">No history recorded yet for this machine.</td></tr>`;
                 return;
             }
             timeline.forEach(entry => {
@@ -1484,53 +1301,18 @@
                 let statusBadgeClass = 'badge-blue';
                 if (entry.status === 'Closed' || entry.status === 'Done') statusBadgeClass = 'badge-emerald';
                 else if (entry.status === 'Pending' || entry.status === 'Open') statusBadgeClass = 'badge-amber';
+                else if (entry.status === 'Postponed') statusBadgeClass = 'badge-blue';
                 const downtimeNote = entry.downtime ? ` <span style="color:#b45309; font-size:0.7rem;">(${entry.downtime} min downtime)</span>` : '';
-                const isExpanded = mhExpandedRowKey === entry.key;
-                const rowEl = document.createElement('tr');
-                rowEl.style.cursor = 'pointer';
-                rowEl.onclick = () => { mhExpandedRowKey = isExpanded ? null : entry.key; renderMachineHistory(); };
-                rowEl.innerHTML = `
-                    <td style="white-space: nowrap;">${entry.dateLabel}</td>
-                    <td>${typeBadge}</td>
-                    <td>${entry.desc}${downtimeNote}</td>
-                    <td><span class="badge ${statusBadgeClass}">${entry.status}</span></td>
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="white-space: nowrap;">${entry.dateLabel}</td>
+                        <td>${typeBadge}</td>
+                        <td>${entry.desc}${downtimeNote}</td>
+                        <td style="color:#64748b; font-size:0.75rem;">${entry.details || '—'}</td>
+                        <td><span class="badge ${statusBadgeClass}">${entry.status}</span></td>
+                    </tr>
                 `;
-                tbody.appendChild(rowEl);
-                if (isExpanded) {
-                    const detailRow = document.createElement('tr');
-                    const detailHtml = Object.entries(entry.fullDetails).map(([label, val]) =>
-                        `<div style="margin-bottom: 0.3rem;"><span style="color:#64748b; font-weight:600;">${label}:</span> <span style="color:#334155; white-space: pre-line;">${val}</span></div>`
-                    ).join('');
-                    detailRow.innerHTML = `<td colspan="4" style="background:#f8fafc; font-size: 0.75rem; padding: 0.85rem 1rem; border-left: 3px solid ${entry.type === 'EJR' ? '#2563eb' : '#059669'};">${detailHtml}</td>`;
-                    tbody.appendChild(detailRow);
-                }
             });
-        }
-
-        // Populates the <datalist> suggestion lists on the EJR and PM forms from the
-        // master equipment list, filtered to the department currently chosen in that form.
-        function populateMachineDatalists() {
-            const ejrDeptSel = document.getElementById('formEjrDept');
-            const ejrDept = ejrDeptSel ? ejrDeptSel.value : 'DS';
-            fillMachineDatalist('ejrMachineDatalist', ejrDept);
-
-            const pmDeptSel = document.getElementById('formPmDept');
-            const pmDept = pmDeptSel ? pmDeptSel.value : 'DS';
-            fillMachineDatalist('pmMachineDatalist', pmDept);
-        }
-
-        function fillMachineDatalist(datalistId, deptCode) {
-            const dl = document.getElementById(datalistId);
-            if (!dl) return;
-            const normalized = String(deptCode || '').trim().toUpperCase();
-            const key = (normalized === 'FET' || normalized === 'FELT') ? 'Felt' : normalized;
-            const names = MACHINE_MASTER_LIST[key] || [];
-            dl.innerHTML = names.map(n => `<option value="${n.replace(/"/g, '&quot;')}"></option>`).join('');
-        }
-
-        function onPmDeptChange() {
-            const pmDeptSel = document.getElementById('formPmDept');
-            fillMachineDatalist('pmMachineDatalist', pmDeptSel ? pmDeptSel.value : 'DS');
         }
 
         function openEditSummaryModal(deptKey) {
@@ -1816,6 +1598,18 @@
         }
 
         // ▼▼▼ LIVE INDIVIDUAL LINE GRAPH (driven by EJR + manual uptime) ▼▼▼
+        // For the currently selected production line and the year chosen in the card's own
+        // year picker, this function:
+        //   1. Aggregates the "Downtime (min)" column from every matching EJR record into 12
+        //      monthly buckets (rows with blank/non-numeric downtime are ignored).
+        //   2. Distributes the line's manual annual Uptime evenly across 12 months.
+        //   3. Derives monthly Uptime % and Downtime % against the (uptime + downtime) base.
+        //   4. Plots the four metrics the user cares about:
+        //        • Uptime %           (blue line, left axis)
+        //        • Downtime %         (orange line, left axis)
+        //        • Target Uptime %    (green dashed, left axis)
+        //        • MTBF (hrs)         (purple dashed, right hours axis — constant per year)
+        //        • MTTR (hrs)         (red dashed, right hours axis — constant per year)
         function renderIndividualLineGraph() {
             const ctx = document.getElementById('individualLineGraph');
             if (!ctx) return;
@@ -1829,6 +1623,7 @@
 
             const year = lineGraphDatasetYear;
 
+            // Map production line key -> EJR department codes that belong to it
             const LINE_TO_DEPT_CODES = {
                 'DS':   ['DS'],
                 'NVH':  ['NVH'],
@@ -1838,6 +1633,7 @@
 
             const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
+            // 1) Aggregate monthly downtime (minutes) from EJR records for this line + year
             const monthlyDowntimeMin = new Array(12).fill(0);
             const monthlyDowntimeCount = new Array(12).fill(0);
             masterEjrList.forEach(item => {
@@ -1853,9 +1649,11 @@
             });
             const monthlyDowntimeHrs = monthlyDowntimeMin.map(m => m / 60);
 
+            // 2) Distribute manual annual uptime evenly across 12 months
             const annualUptimeHrs = parseFloat(String(deptData[deptKey].uptime || '0').replace(/[^\d.\-]/g, '')) || 0;
             const monthlyUptimeHrs = annualUptimeHrs / 12;
 
+            // 3) Derive monthly % figures
             const uptimePct = [];
             const downtimePct = [];
             for (let i = 0; i < 12; i++) {
@@ -1875,6 +1673,7 @@
             const mtbfVal = parseFloat(deptData[deptKey].mtbfVal) || 0;
             const mttrVal = parseFloat(deptData[deptKey].mttrVal) || 0;
 
+            // Populate the year dropdown inside the card
             const yrSelElem = document.getElementById('lineGraphYearSelect');
             if (yrSelElem) {
                 yrSelElem.innerHTML = "";
@@ -1886,6 +1685,7 @@
                 });
             }
 
+            // Right-side "hours" axis range: accommodates both MTBF and MTTR comfortably
             const maxHours = Math.max(60, Math.ceil(Math.max(mtbfVal, mttrVal) * 1.2));
 
             individualLineChartInstance = new Chart(ctx.getContext('2d'), {
@@ -2117,6 +1917,7 @@
                 }
             }
 
+            // Populate the dedicated department downtime summary cards
             const dt2 = computeFilteredDowntimeSummary(filtered);
             const hrs2 = (min) => (min / 60).toFixed(1);
             const setStat = (deptKey, min, count) => {
@@ -2196,7 +1997,6 @@
             document.getElementById('formEjrMin').value = "";
             document.getElementById('formEjrDowntime').value = "";
             document.getElementById('formEjrNotes').value = "";
-            populateMachineDatalists();
             document.getElementById('ejrModal').classList.remove('hidden');
         }
 
@@ -2219,7 +2019,6 @@
             document.getElementById('formEjrMin').value = item.min || '';
             document.getElementById('formEjrDowntime').value = item.downtime || '';
             document.getElementById('formEjrNotes').value = item.notes || '';
-            populateMachineDatalists();
             document.getElementById('ejrModal').classList.remove('hidden');
         }
         function closeEjrModal() { document.getElementById('ejrModal').classList.add('hidden'); }
@@ -2463,13 +2262,11 @@
         function openAddPmModal() {
             document.getElementById('pmModalTitle').textContent = "Register Preventive Maintenance";
             document.getElementById('editPmIndex').value = -1;
-            document.getElementById('formPmDept').value = "DS";
             document.getElementById('formPmMachine').value = "";
             document.getElementById('formPmDate').value = `${selectedPmYear}-09-25`;
             document.getElementById('formPmDesc').value = "";
             document.getElementById('formPmStatus').value = "Pending";
             document.getElementById('postponedDateWrapper').classList.add('hidden');
-            fillMachineDatalist('pmMachineDatalist', 'DS');
             document.getElementById('pmModal').classList.remove('hidden');
         }
 
@@ -2487,7 +2284,6 @@
                 document.getElementById('postponedDateWrapper').classList.remove('hidden');
                 document.getElementById('formPmPostponedDate').value = pm.postponedDate || "";
             } else document.getElementById('postponedDateWrapper').classList.add('hidden');
-            fillMachineDatalist('pmMachineDatalist', pm.dept);
             document.getElementById('pmModal').classList.remove('hidden');
         }
         function closePmModal() { document.getElementById('pmModal').classList.add('hidden'); }
