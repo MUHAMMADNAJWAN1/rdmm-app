@@ -411,8 +411,9 @@
                                 <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">Select a machine to view its complete combined history — every EJR repair job and every PM task ever recorded for it, in one timeline.</p>
                             </div>
                             <div id="machineHistoryDropdownWrapper" style="min-width: 280px;">
-                                <label for="machineHistorySelect" style="font-size: 0.7rem; margin-bottom: 0.3rem; color: #475569;">Machine:</label>
-                                <select id="machineHistorySelect" onchange="selectMachineHistory(this.value)" style="font-weight: 600; color: #1e293b;"></select>
+                                <label for="machineHistorySearch" style="font-size: 0.7rem; margin-bottom: 0.3rem; color: #475569;">Machine (type to search):</label>
+                                <input type="text" id="machineHistorySearch" list="machineHistoryDatalist" placeholder="e.g. Calender Roll, Kneader…" oninput="onMachineHistorySearchInput(this.value)" style="font-weight: 600; color: #1e293b;">
+                                <datalist id="machineHistoryDatalist"></datalist>
                             </div>
                         </div>
                         <div id="machineHistoryEmptyState" style="text-align: center; padding: 2.5rem 1rem; color: #94a3b8;">
@@ -1285,12 +1286,17 @@
             return true;
         }
 
+        // Builds the <datalist> of machine-name suggestions (filtered to the currently
+        // selected DS/NVH/Feltline line) and keeps the search box + selection in sync.
+        // Typing e.g. "cal" will suggest "Calender Roll" via the browser's native
+        // datalist matching (matches anywhere in the name, not just the start).
         function populateMachineHistoryDropdown() {
             const wrapper = document.getElementById('machineHistoryDropdownWrapper');
             const emptyState = document.getElementById('machineHistoryEmptyState');
             const content = document.getElementById('machineHistoryContent');
-            const select = document.getElementById('machineHistorySelect');
-            if (!select) return;
+            const searchInput = document.getElementById('machineHistorySearch');
+            const datalist = document.getElementById('machineHistoryDatalist');
+            if (!searchInput || !datalist) return;
 
             const allMachines = getAllKnownMachines();
             const machines = allMachines.filter(m => machineMatchesSelectedDept(m.dept));
@@ -1300,6 +1306,8 @@
                 emptyState.classList.remove('hidden');
                 content.classList.add('hidden');
                 selectedMachineHistory = null;
+                searchInput.value = '';
+                datalist.innerHTML = '';
                 return;
             }
             wrapper.classList.remove('hidden');
@@ -1309,28 +1317,41 @@
                 selectedMachineHistory = machines[0].name;
             }
 
-            // Group by department, in master-schedule order (DS, NVH, Felt, then any Unassigned)
+            // Sort alphabetically within each dept, DS -> NVH -> Felt -> Unassigned order
             const deptOrder = ['DS', 'NVH', 'Felt', 'Unassigned'];
-            const byDept = {};
-            machines.forEach(m => { (byDept[m.dept] = byDept[m.dept] || []).push(m.name); });
-            const deptsPresent = Object.keys(byDept).sort((a, b) => {
-                const ia = deptOrder.indexOf(a), ib = deptOrder.indexOf(b);
-                return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+            const sorted = machines.slice().sort((a, b) => {
+                const ia = deptOrder.indexOf(a.dept), ib = deptOrder.indexOf(b.dept);
+                const da = (ia === -1 ? 99 : ia), db = (ib === -1 ? 99 : ib);
+                if (da !== db) return da - db;
+                return a.name.localeCompare(b.name);
             });
 
-            select.innerHTML = deptsPresent.map(dept =>
-                `<optgroup label="${dept}">` +
-                byDept[dept].map(name =>
-                    `<option value="${name.replace(/"/g, '&quot;')}" ${name === selectedMachineHistory ? 'selected' : ''}>${name}</option>`
-                ).join('') +
-                `</optgroup>`
+            datalist.innerHTML = sorted.map(m =>
+                `<option value="${m.name.replace(/"/g, '&quot;')}">${m.dept}</option>`
             ).join('');
 
+            searchInput.value = selectedMachineHistory;
             renderMachineHistory();
+        }
+
+        // Fires on every keystroke in the search box. Only switches the displayed
+        // machine once the typed text exactly matches a known machine name (i.e. the
+        // user picked a suggestion or finished typing the exact name) — partial text
+        // while still typing does not clear/reset the view.
+        function onMachineHistorySearchInput(value) {
+            const allMachines = getAllKnownMachines();
+            const machines = allMachines.filter(m => machineMatchesSelectedDept(m.dept));
+            const match = machines.find(m => m.name.toLowerCase() === String(value || '').trim().toLowerCase());
+            if (match) {
+                selectedMachineHistory = match.name;
+                renderMachineHistory();
+            }
         }
 
         function selectMachineHistory(name) {
             selectedMachineHistory = name;
+            const searchInput = document.getElementById('machineHistorySearch');
+            if (searchInput) searchInput.value = name;
             renderMachineHistory();
         }
 
